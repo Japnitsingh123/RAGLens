@@ -1,0 +1,22 @@
+# Environment & Secrets (NEVER COMMIT)
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.venv/
+env/
+venv/
+ENV/
+
+# Vercel
+.vercel/
+
+# Operating System
+.DS_Store
+Thumbs.db

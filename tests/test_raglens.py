@@ -1,8 +1,9 @@
 """
 Comprehensive Unit & Integration Test Suite for RAGLens.
 Tests:
-- MySQL Vector Store & Hybrid Search
+- ChromaDB Vector Store & Hybrid Search
 - 5 RAG Strategies: Naive, Hybrid BM25, Cohere Rerank, HyDE, Parent-Child
+- Document Ingestion & LLM Synthetic Question Generation
 - LangGraph Parallel Execution Workflow
 - Ragas LLM-as-a-Judge (Faithfulness, Correctness, Completeness)
 - Failure Attribution Diagnostics (Context Limits, Embedding Weakness, Hallucination)
@@ -20,7 +21,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.core.mysql_vector_store import MySQLVectorStore, generate_deterministic_embedding, cosine_similarity
+from app.core.chroma_vector_store import ChromaVectorStore, global_chroma_store
 from app.core.rag_strategies import (
     execute_naive_rag,
     execute_hybrid_bm25,
@@ -28,6 +29,7 @@ from app.core.rag_strategies import (
     execute_hyde,
     execute_parent_child
 )
+from app.core.document_ingest import chunk_document, generate_benchmark_questions_from_document, ingest_document_into_store
 from app.core.ragas_evaluator import RagasEvaluator
 from app.core.failure_attribution import FailureAttributionEngine
 from app.core.langgraph_workflow import execute_parallel_benchmark
@@ -35,21 +37,21 @@ from app.models.schemas import RootCauseType
 
 client = TestClient(app)
 
-def test_mysql_vector_store():
-    store = MySQLVectorStore()
+def test_chroma_vector_store():
+    store = ChromaVectorStore(collection_name="test_chroma_unit")
     store.add_parent_document("doc_1", "Security Specs", "Complete technical security architecture with AES-256-GCM.")
     store.add_chunk("chunk_1", "doc_1", "AES-256-GCM authenticated encryption for data at rest.", "Security Specs")
     store.add_chunk("chunk_2", "doc_1", "TLS 1.3 for data in transit across microservices.", "Security Specs")
 
-    # Test Dense Vector Search
+    # Test Dense Vector Search in ChromaDB
     dense_results = store.similarity_search("encryption for data at rest", top_k=1)
     assert len(dense_results) == 1
     assert "AES-256-GCM" in dense_results[0]["content"]
 
-    # Test MySQL Fulltext Search
-    fts_results = store.mysql_fulltext_search("TLS microservices", top_k=1)
-    assert len(fts_results) == 1
-    assert "TLS 1.3" in fts_results[0]["content"]
+    # Test BM25 Search
+    bm25_results = store.bm25_search("TLS microservices", top_k=1)
+    assert len(bm25_results) == 1
+    assert "TLS 1.3" in bm25_results[0]["content"]
 
     # Test Parent Document Lookup
     parent = store.get_parent_document("doc_1")
@@ -86,6 +88,29 @@ async def test_5_rag_strategies():
     assert len(parent_child["contexts"]) > 0
 
 @pytest.mark.anyio
+async def test_document_ingest_and_question_generation():
+    doc_title = "Kubernetes Pod Autoscaler Architecture"
+    doc_content = (
+        "The Horizontal Pod Autoscaler (HPA) automatically scales the number of Pods in a replication controller, "
+        "deployment, replica set or stateful set based on observed CPU utilization or with custom metrics. "
+        "Target CPU utilization is configured at 80% with a minimum of 3 replicas and a maximum of 50 replicas. "
+        "The metrics server scrapes pod resource telemetry every 15 seconds."
+    )
+    
+    # Ingest into ChromaDB
+    parents_count, chunks_count = ingest_document_into_store(doc_title, doc_content)
+    assert parents_count >= 1
+    assert chunks_count >= 1
+
+    # Generate benchmark questions
+    questions = await generate_benchmark_questions_from_document(doc_title, doc_content)
+    assert len(questions) >= 3
+    for q in questions:
+        assert "question" in q
+        assert "ground_truth" in q
+        assert "target_strategy_focus" in q
+
+@pytest.mark.anyio
 async def test_ragas_evaluation_engine():
     query = "What is the uptime SLA guarantee?"
     answer = "The platform guarantees a 99.99% monthly uptime SLA."
@@ -100,7 +125,6 @@ async def test_ragas_evaluation_engine():
 def test_failure_attribution_engine():
     from app.models.schemas import RagasMetrics
 
-    # Test Context Limits Diagnosis
     metrics_limit = RagasMetrics(
         faithfulness=0.9,
         answer_correctness=0.6,
@@ -131,7 +155,7 @@ def test_fastapi_endpoints():
     # Health check
     res_health = client.get("/api/health")
     assert res_health.status_code == 200
-    assert res_health.json()["vector_store"] == "MySQL VECTOR(768) Engine"
+    assert res_health.json()["vector_store"] == "ChromaDB Vector Store"
 
     # Presets
     res_presets = client.get("/api/presets")
@@ -143,10 +167,19 @@ def test_fastapi_endpoints():
     assert res_strats.status_code == 200
     assert len(res_strats.json()["strategies"]) == 5
 
-    # MySQL Schema
-    res_schema = client.get("/api/schema/mysql")
-    assert res_schema.status_code == 200
-    assert "CREATE TABLE IF NOT EXISTS rag_documents" in res_schema.json()["schema_sql"]
+    # ChromaDB Stats
+    res_chroma = client.get("/api/chroma/stats")
+    assert res_chroma.status_code == 200
+    assert res_chroma.json()["total_chunks"] > 0
+
+    # Upload document JSON endpoint
+    res_upload = client.post("/api/upload-document-json", json={
+        "title": "API Gateway Rate Limiting",
+        "content": "API Gateway enforces token bucket algorithm with 500 requests per second limit per tenant."
+    })
+    assert res_upload.status_code == 200
+    assert res_upload.json()["status"] == "success"
+    assert len(res_upload.json()["generated_questions"]) >= 2
 
     # Dashboard HTML
     res_dash = client.get("/")

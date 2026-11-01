@@ -1,9 +1,9 @@
 """
-5 Core RAG Benchmarking Strategies:
-1. Naive RAG (Dense Vector Similarity via MySQL VECTOR)
-2. Hybrid BM25 (Dense Vector + MySQL FULLTEXT Lexical with Reciprocal Rank Fusion)
-3. Cohere Rerank (Candidate Retrieval + Cross-Encoder Semantic Reranker)
-4. HyDE (Hypothetical Document Embeddings)
+5 Core RAG Benchmarking Strategies powered by ChromaDB:
+1. Naive RAG (Dense Vector Similarity via ChromaDB HNSW Index)
+2. Hybrid BM25 (Dense ChromaDB + BM25 Lexical with Reciprocal Rank Fusion)
+3. Cohere Rerank (ChromaDB Candidate Pool + Cross-Encoder Semantic Reranker)
+4. HyDE (Hypothetical Document Embeddings via ChromaDB)
 5. Parent-Child (Granular Child Retrieval -> Full Parent Context Expansion)
 """
 
@@ -12,24 +12,7 @@ import time
 import re
 from typing import List, Dict, Any, Optional
 import httpx
-from app.core.mysql_vector_store import MySQLVectorStore, cosine_similarity, generate_deterministic_embedding
-from app.data.sample_knowledge_base import SAMPLE_ENTERPRISE_DOCS
-
-# Initialize default MySQL vector store and populate with enterprise docs
-default_vector_store = MySQLVectorStore()
-for doc in SAMPLE_ENTERPRISE_DOCS:
-    default_vector_store.add_parent_document(
-        doc_id=doc["doc_id"],
-        title=doc["title"],
-        full_content=doc["full_content"]
-    )
-    for chunk in doc["chunks"]:
-        default_vector_store.add_chunk(
-            chunk_id=chunk["chunk_id"],
-            parent_id=doc["doc_id"],
-            content=chunk["content"],
-            title=doc["title"]
-        )
+from app.core.chroma_vector_store import ChromaVectorStore, global_chroma_store
 
 async def call_llm_generation(prompt: str, system_prompt: str = "You are a concise, factual technical assistant.") -> str:
     """Invokes Gemini 2.5 Flash via REST API with fallback."""
@@ -53,7 +36,6 @@ async def call_llm_generation(prompt: str, system_prompt: str = "You are a conci
         except Exception:
             pass
 
-    # Fast deterministic synthesis fallback
     return synthesize_fallback_answer(prompt)
 
 def synthesize_fallback_answer(prompt: str) -> str:
@@ -68,8 +50,8 @@ def synthesize_fallback_answer(prompt: str) -> str:
     return "Based on the provided context, the architecture enforces enterprise standards with automated verification."
 
 # Strategy 1: Naive RAG
-async def execute_naive_rag(query: str, top_k: int = 3, store: Optional[MySQLVectorStore] = None) -> Dict[str, Any]:
-    store = store or default_vector_store
+async def execute_naive_rag(query: str, top_k: int = 3, store: Optional[ChromaVectorStore] = None) -> Dict[str, Any]:
+    store = store or global_chroma_store
     t0 = time.perf_counter()
     retrieved = store.similarity_search(query, top_k=top_k)
     t_ret = time.perf_counter()
@@ -86,7 +68,7 @@ async def execute_naive_rag(query: str, top_k: int = 3, store: Optional[MySQLVec
     return {
         "strategy": "naive",
         "strategy_name": "Naive Dense RAG",
-        "description": "Standard MySQL 8.4 VECTOR cosine similarity matching and direct passage generation.",
+        "description": "Standard ChromaDB dense vector cosine similarity matching with direct passage generation.",
         "answer": answer,
         "contexts": contexts,
         "retrieved_docs": retrieved,
@@ -97,8 +79,8 @@ async def execute_naive_rag(query: str, top_k: int = 3, store: Optional[MySQLVec
     }
 
 # Strategy 2: Hybrid BM25
-async def execute_hybrid_bm25(query: str, top_k: int = 3, store: Optional[MySQLVectorStore] = None) -> Dict[str, Any]:
-    store = store or default_vector_store
+async def execute_hybrid_bm25(query: str, top_k: int = 3, store: Optional[ChromaVectorStore] = None) -> Dict[str, Any]:
+    store = store or global_chroma_store
     t0 = time.perf_counter()
     retrieved = store.hybrid_search(query, top_k=top_k)
     t_ret = time.perf_counter()
@@ -115,7 +97,7 @@ async def execute_hybrid_bm25(query: str, top_k: int = 3, store: Optional[MySQLV
     return {
         "strategy": "hybrid_bm25",
         "strategy_name": "Hybrid BM25 RAG",
-        "description": "Combines dense MySQL VECTOR search and sparse MySQL FULLTEXT ranking via Reciprocal Rank Fusion (RRF).",
+        "description": "Combines dense ChromaDB vector search and sparse BM25 lexical ranking via Reciprocal Rank Fusion (RRF).",
         "answer": answer,
         "contexts": contexts,
         "retrieved_docs": retrieved,
@@ -126,8 +108,8 @@ async def execute_hybrid_bm25(query: str, top_k: int = 3, store: Optional[MySQLV
     }
 
 # Strategy 3: Cohere Rerank
-async def execute_cohere_rerank(query: str, top_k: int = 3, store: Optional[MySQLVectorStore] = None) -> Dict[str, Any]:
-    store = store or default_vector_store
+async def execute_cohere_rerank(query: str, top_k: int = 3, store: Optional[ChromaVectorStore] = None) -> Dict[str, Any]:
+    store = store or global_chroma_store
     t0 = time.perf_counter()
     candidates = store.similarity_search(query, top_k=top_k * 2)
 
@@ -155,7 +137,7 @@ async def execute_cohere_rerank(query: str, top_k: int = 3, store: Optional[MySQ
     return {
         "strategy": "cohere_rerank",
         "strategy_name": "Cohere Cross-Encoder Rerank",
-        "description": "Retrieves wide candidate set from MySQL VECTOR and applies cross-encoder semantic attention reranking.",
+        "description": "Retrieves wide candidate set from ChromaDB and applies cross-encoder semantic attention reranking.",
         "answer": answer,
         "contexts": contexts,
         "retrieved_docs": reranked,
@@ -166,8 +148,8 @@ async def execute_cohere_rerank(query: str, top_k: int = 3, store: Optional[MySQ
     }
 
 # Strategy 4: HyDE (Hypothetical Document Embeddings)
-async def execute_hyde(query: str, top_k: int = 3, store: Optional[MySQLVectorStore] = None) -> Dict[str, Any]:
-    store = store or default_vector_store
+async def execute_hyde(query: str, top_k: int = 3, store: Optional[ChromaVectorStore] = None) -> Dict[str, Any]:
+    store = store or global_chroma_store
     t0 = time.perf_counter()
 
     hypo_prompt = f"Write a brief 1-2 sentence technical answer to this question: {query}"
@@ -188,7 +170,7 @@ async def execute_hyde(query: str, top_k: int = 3, store: Optional[MySQLVectorSt
     return {
         "strategy": "hyde",
         "strategy_name": "HyDE (Hypothetical Document Embeddings)",
-        "description": "Generates a zero-shot hypothetical document first to bridge semantic query-to-document asymmetry.",
+        "description": "Generates a zero-shot hypothetical document first to bridge semantic query-to-document asymmetry in ChromaDB.",
         "hypothetical_doc": hypothetical_doc,
         "answer": answer,
         "contexts": contexts,
@@ -200,8 +182,8 @@ async def execute_hyde(query: str, top_k: int = 3, store: Optional[MySQLVectorSt
     }
 
 # Strategy 5: Parent-Child
-async def execute_parent_child(query: str, top_k: int = 3, store: Optional[MySQLVectorStore] = None) -> Dict[str, Any]:
-    store = store or default_vector_store
+async def execute_parent_child(query: str, top_k: int = 3, store: Optional[ChromaVectorStore] = None) -> Dict[str, Any]:
+    store = store or global_chroma_store
     t0 = time.perf_counter()
 
     child_chunks = store.similarity_search(query, top_k=top_k)
@@ -230,7 +212,7 @@ async def execute_parent_child(query: str, top_k: int = 3, store: Optional[MySQL
     return {
         "strategy": "parent_child",
         "strategy_name": "Parent-Child Document Expansion",
-        "description": "Searches small child chunks (100 tokens) in MySQL for precision, then expands to parent context (500 tokens) to prevent context boundary truncation.",
+        "description": "Searches small child chunks (100 tokens) in ChromaDB for precision, then expands to parent context (500 tokens) to prevent context boundary truncation.",
         "answer": answer,
         "contexts": contexts,
         "child_chunks_matched": [c["id"] for c in child_chunks],

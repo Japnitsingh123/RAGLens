@@ -62,4 +62,22 @@ class BenchmarkResponse(BaseModel):
     results: List[StrategyResult]
     best_strategy: str
     executive_summary: str
-    mysql_vector_status: str = "MySQL 8.4 VECTOR(768) Engine Active"
+    vector_store_status: str = "ChromaDB Embedded Vector Engine Active"
+
+class GeneratedQuestion(BaseModel):
+    question: str
+    ground_truth: str
+    target_strategy_focus: str
+    aspect: str
+
+class DocUploadJsonRequest(BaseModel):
+    title: str = Field(..., min_length=2, max_length=200)
+    content: str = Field(..., min_length=20)
+
+class DocumentUploadResponse(BaseModel):
+    status: str = "success"
+    title: str
+    parents_ingested: int
+    chunks_created: int
+    generated_questions: List[GeneratedQuestion]
+    message: str

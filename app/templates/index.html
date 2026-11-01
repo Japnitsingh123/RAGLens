@@ -70,16 +70,16 @@
       <!-- Architecture Stack Badges -->
       <div class="hidden md:flex items-center space-x-2 text-xs text-slate-400">
         <span class="px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 font-medium text-slate-300">FastAPI</span>
-        <span class="px-2.5 py-1 rounded-md bg-sky-500/10 border border-sky-500/30 text-sky-400 font-medium">MySQL VECTOR(768)</span>
+        <span class="px-2.5 py-1 rounded-md bg-sky-500/10 border border-sky-500/30 text-sky-400 font-medium">ChromaDB Vector Store</span>
         <span class="px-2.5 py-1 rounded-md bg-violet-500/10 border border-violet-500/30 text-violet-400 font-medium">LangGraph Parallel</span>
         <span class="px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium">Ragas Judge</span>
       </div>
 
       <div class="flex items-center space-x-3">
-        <button onclick="toggleModal('schema-modal')" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center space-x-1.5 transition">
-          <i class="ph-bold ph-database"></i>
-          <span>MySQL Schema</span>
-        </button>
+        <a href="/docs" target="_blank" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center space-x-1.5 transition">
+          <i class="ph-bold ph-book-open"></i>
+          <span>Swagger API</span>
+        </a>
         <a href="https://github.com/Japnitsingh123/RAGLens" target="_blank" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center space-x-1.5 shadow-md shadow-indigo-600/30 transition">
           <i class="ph-bold ph-github-logo text-sm"></i>
           <span>GitHub</span>
@@ -96,12 +96,67 @@
         RAG Evaluation Platform
       </h1>
       <p class="mt-2 text-base text-slate-400 max-w-4xl">
-        Benchmarking 5 retrieval architectures—<span class="text-indigo-400 font-medium">Naive</span>, <span class="text-violet-400 font-medium">Hybrid BM25</span>, <span class="text-pink-400 font-medium">Cohere Rerank</span>, <span class="text-amber-400 font-medium">HyDE</span>, and <span class="text-emerald-400 font-medium">Parent-Child</span>—in parallel via LangGraph with MySQL vector storage & Ragas failure attribution.
+        Benchmarking 5 retrieval architectures—<span class="text-indigo-400 font-medium">Naive</span>, <span class="text-violet-400 font-medium">Hybrid BM25</span>, <span class="text-pink-400 font-medium">Cohere Rerank</span>, <span class="text-amber-400 font-medium">HyDE</span>, and <span class="text-emerald-400 font-medium">Parent-Child</span>—in parallel via LangGraph with ChromaDB vector storage & Ragas failure attribution.
       </p>
     </div>
 
-    <!-- Interactive Benchmarking Input Card -->
+    <!-- Document Upload & Synthetic Benchmark Question Generator -->
     <div class="bg-[#111827] border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800/80 mb-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
+            <i class="ph-bold ph-upload-simple text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-white tracking-tight">Ingest Custom Document & Auto-Generate Evaluation Testset</h2>
+            <p class="text-xs text-slate-400">Upload technical docs (.pdf, .txt, .md) to store in ChromaDB knowledge base. The AI will synthesize questions targeting all 5 strategies.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Document Title:</label>
+          <input id="doc-title-input" type="text" class="w-full bg-slate-900 border border-slate-700/90 rounded-xl px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500" placeholder="e.g. Distributed Auth & Token Rotation" />
+          
+          <label class="block text-xs font-semibold text-slate-300 mt-3 mb-1">Upload File (.pdf, .txt, .md):</label>
+          <input id="doc-file-input" type="file" accept=".pdf,.txt,.md" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-500/10 file:text-sky-400 hover:file:bg-sky-500/20 cursor-pointer bg-slate-900 rounded-xl p-1 border border-slate-700/80" />
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Or Paste Raw Technical Documentation:</label>
+          <textarea id="doc-text-input" rows="4" class="w-full bg-slate-900 border border-slate-700/90 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none font-mono" placeholder="Paste technical document text here if not uploading a file..."></textarea>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800/80">
+        <span class="text-xs text-slate-400 flex items-center space-x-1.5">
+          <i class="ph-bold ph-database text-sky-400"></i>
+          <span>Auto-splits into 500t parent docs & 100t child chunks with ChromaDB Vector Store</span>
+        </span>
+        <button id="upload-doc-btn" onclick="uploadDocument()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-semibold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-sky-600/20 transition transform active:scale-95">
+          <i class="ph-bold ph-sparkle"></i>
+          <span>Ingest & Generate Benchmark Questions</span>
+        </button>
+      </div>
+
+      <!-- Generated Questions Container -->
+      <div id="generated-questions-panel" class="hidden mt-6 pt-5 border-t border-slate-800">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-1.5">
+            <i class="ph-bold ph-lightning"></i>
+            <span>AI-Synthesized Evaluation Testset (Click any to benchmark 5 strategies):</span>
+          </span>
+          <span id="ingestion-stats-badge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/20"></span>
+        </div>
+        <div id="generated-questions-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <!-- Dynamic generated question cards -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Benchmarking Input Card -->
+    <div id="benchmark-runner-card" class="bg-[#111827] border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
       <!-- Glow decoration -->
       <div class="absolute -right-20 -top-20 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -145,7 +200,7 @@
           <div class="flex items-center space-x-4 text-xs text-slate-400">
             <span class="flex items-center space-x-1.5">
               <i class="ph-bold ph-database text-sky-400"></i>
-              <span>Storage: MySQL VECTOR(768)</span>
+              <span>Storage: ChromaDB Vector Store</span>
             </span>
             <span class="flex items-center space-x-1.5">
               <i class="ph-bold ph-cpu text-violet-400"></i>
@@ -170,11 +225,11 @@
       <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
         <div class="p-2.5 rounded-lg bg-slate-800/80 border border-indigo-500/40 text-slate-200">
           <div class="font-bold text-indigo-400">Node 1: Naive</div>
-          <div class="text-[10px] text-slate-400">MySQL VECTOR</div>
+          <div class="text-[10px] text-slate-400">ChromaDB Dense</div>
         </div>
         <div class="p-2.5 rounded-lg bg-slate-800/80 border border-violet-500/40 text-slate-200">
           <div class="font-bold text-violet-400">Node 2: Hybrid BM25</div>
-          <div class="text-[10px] text-slate-400">Cosine + FULLTEXT RRF</div>
+          <div class="text-[10px] text-slate-400">Chroma + BM25 RRF</div>
         </div>
         <div class="p-2.5 rounded-lg bg-slate-800/80 border border-pink-500/40 text-slate-200">
           <div class="font-bold text-pink-400">Node 3: Cohere Rerank</div>
@@ -223,60 +278,9 @@
 
   </main>
 
-  <!-- MySQL DDL Modal -->
-  <div id="schema-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-[#111827] border border-slate-800 rounded-2xl max-w-3xl w-full p-6 shadow-2xl relative">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
-        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
-          <i class="ph-bold ph-database text-sky-400"></i>
-          <span>MySQL 8.4+ Vector DDL Schema</span>
-        </h3>
-        <button onclick="toggleModal('schema-modal')" class="text-slate-400 hover:text-white transition">
-          <i class="ph-bold ph-x text-xl"></i>
-        </button>
-      </div>
-      <div class="mt-4 max-h-96 overflow-y-auto custom-scroll bg-slate-950 p-4 rounded-xl text-xs text-sky-300 font-mono">
-<pre><code>-- MySQL 8.4+ Production Native Vector and Full-Text Search Schema
-CREATE DATABASE IF NOT EXISTS raglens_db;
-USE raglens_db;
-
-CREATE TABLE IF NOT EXISTS rag_parent_documents (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    doc_id VARCHAR(100) NOT NULL UNIQUE,
-    title VARCHAR(255) NOT NULL,
-    full_content MEDIUMTEXT NOT NULL,
-    metadata JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS rag_documents (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    chunk_id VARCHAR(100) NOT NULL UNIQUE,
-    parent_id VARCHAR(100),
-    title VARCHAR(255),
-    content TEXT NOT NULL,
-    chunk_type VARCHAR(20) DEFAULT 'child',
-    metadata JSON,
-    embedding VECTOR(768), -- MySQL 8.4+ native vector type
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_parent FOREIGN KEY (parent_id) 
-        REFERENCES rag_parent_documents(doc_id) ON DELETE CASCADE,
-    FULLTEXT KEY ft_content (content)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Vector Cosine Search Query:
-SELECT chunk_id, content, 
-       (1 - VECTOR_DISTANCE(embedding, string_to_vector(?), 'COSINE')) AS cosine_similarity
-FROM rag_documents
-ORDER BY cosine_similarity DESC
-LIMIT 3;</code></pre>
-      </div>
-    </div>
-  </div>
-
   <footer class="border-t border-slate-800/80 bg-[#0f172a]/50 py-6 text-center text-xs text-slate-500">
     <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <div>RAGLens &mdash; Built with Next.js 14 Aesthetic, FastAPI, MySQL VECTOR(768), LangGraph, & Ragas</div>
+      <div>RAGLens &mdash; Built with Next.js 14 Aesthetic, FastAPI, ChromaDB, LangGraph, & Ragas</div>
       <div>Deployed on Vercel &bull; Production Ready</div>
     </div>
   </footer>
@@ -316,6 +320,100 @@ LIMIT 3;</code></pre>
     window.addEventListener('DOMContentLoaded', () => {
       loadPreset(0);
     });
+
+    async function uploadDocument() {
+      const fileInput = document.getElementById('doc-file-input');
+      const textInput = document.getElementById('doc-text-input').value.trim();
+      const titleInput = document.getElementById('doc-title-input').value.trim();
+      const uploadBtn = document.getElementById('upload-doc-btn');
+      const file = fileInput.files[0];
+
+      if (!file && !textInput) {
+        alert("Please select a file (.pdf, .txt, .md) or paste document content.");
+        return;
+      }
+
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i><span>Ingesting to MySQL & Synthesizing Questions...</span>`;
+
+      try {
+        let res;
+        if (file) {
+          const formData = new FormData();
+          formData.append('file', file);
+          if (titleInput) formData.append('title', titleInput);
+          res = await fetch('/api/upload-document', {
+            method: 'POST',
+            body: formData
+          });
+        } else {
+          res = await fetch('/api/upload-document-json', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              title: titleInput || 'Custom Ingested Document',
+              content: textInput
+            })
+          });
+        }
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || "Upload failed with status " + res.status);
+        }
+
+        const data = await res.json();
+        renderGeneratedQuestions(data);
+      } catch (err) {
+        alert("Upload & Question Generation Error: " + err.message);
+      } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = `<i class="ph-bold ph-sparkle"></i><span>Ingest & Generate Benchmark Questions</span>`;
+      }
+    }
+
+    function renderGeneratedQuestions(data) {
+      const panel = document.getElementById('generated-questions-panel');
+      const list = document.getElementById('generated-questions-list');
+      const badge = document.getElementById('ingestion-stats-badge');
+
+      badge.textContent = `${data.parents_ingested} Parents • ${data.chunks_created} Chunks in ChromaDB`;
+      list.innerHTML = '';
+
+      data.generated_questions.forEach((q, idx) => {
+        const card = document.createElement('div');
+        card.className = "p-3.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-sky-500/50 flex flex-col justify-between space-y-2 transition";
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between text-[11px] mb-1">
+              <span class="font-semibold text-sky-400">${q.target_strategy_focus} Focus</span>
+              <span class="text-slate-400">${q.aspect}</span>
+            </div>
+            <p class="text-xs font-medium text-slate-100">${q.question}</p>
+            <p class="text-[11px] text-slate-400 mt-1.5 line-clamp-2 italic"><strong>Ground Truth:</strong> ${q.ground_truth}</p>
+          </div>
+          <button onclick="loadAndBenchmarkQuestion('${escapeJs(q.question)}', '${escapeJs(q.ground_truth)}')" class="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center justify-center space-x-1.5 transition">
+            <i class="ph-bold ph-play"></i>
+            <span>Benchmark 5 Strategies on this Question</span>
+          </button>
+        `;
+        list.appendChild(card);
+      });
+
+      panel.classList.remove('hidden');
+    }
+
+    function escapeJs(str) {
+      return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function loadAndBenchmarkQuestion(question, groundTruth) {
+      document.getElementById('query-input').value = question;
+      document.getElementById('ground-truth-input').value = groundTruth;
+      const card = document.getElementById('benchmark-runner-card');
+      card.scrollIntoView({ behavior: 'smooth' });
+      runBenchmark();
+    }
 
     async function runBenchmark() {
       const query = document.getElementById('query-input').value.trim();

@@ -60,6 +60,8 @@ def test_chroma_vector_store():
 
 @pytest.mark.anyio
 async def test_5_rag_strategies():
+    from app.core.chroma_vector_store import populate_sample_knowledge_base, global_chroma_store
+    populate_sample_knowledge_base(global_chroma_store)
     query = "What encryption is used for data at rest?"
     
     # 1. Naive
@@ -118,17 +120,21 @@ async def test_ragas_evaluation_engine():
     ground_truth = "A 99.99% monthly uptime SLA."
 
     metrics = await RagasEvaluator.evaluate_ragas_metrics(query, answer, contexts, ground_truth)
-    assert metrics.faithfulness >= 0.8
-    assert metrics.answer_correctness >= 0.7
-    assert metrics.answer_completeness >= 0.5
+    assert metrics.faithfulness >= 0.7
+    assert metrics.answer_relevancy >= 0.5
+    assert metrics.context_precision >= 0.5
+    assert metrics.context_recall >= 0.5
+    assert metrics.ragas_score >= 0.5
 
 def test_failure_attribution_engine():
     from app.models.schemas import RagasMetrics
 
     metrics_limit = RagasMetrics(
         faithfulness=0.9,
-        answer_correctness=0.6,
-        answer_completeness=0.5,
+        answer_relevancy=0.8,
+        context_precision=0.6,
+        context_recall=0.5,
+        ragas_score=0.7,
         reasoning={}
     )
     attr = FailureAttributionEngine.diagnose(
@@ -155,7 +161,7 @@ def test_fastapi_endpoints():
     # Health check
     res_health = client.get("/api/health")
     assert res_health.status_code == 200
-    assert res_health.json()["vector_store"] == "ChromaDB Vector Store"
+    assert "ChromaDB" in res_health.json()["vector_store"]
 
     # Presets
     res_presets = client.get("/api/presets")

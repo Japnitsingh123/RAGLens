@@ -29,12 +29,15 @@ class FailureAttributionEngine:
         total_context_chars = sum(len(c) for c in contexts)
         avg_chunk_len = (total_context_chars / len(contexts)) if contexts else 0
 
+        recall = getattr(ragas_metrics, "context_recall", ragas_metrics.answer_completeness or 0.8)
+        precision = getattr(ragas_metrics, "context_precision", ragas_metrics.answer_correctness or 0.8)
+
         # 1. Analyze Context Limits Severity
         context_limit_score = 0.0
-        # If chunks are short (< 150 chars) and completeness or correctness is low
+        # If chunks are short (< 150 chars) and recall or completeness is low
         if avg_chunk_len < 180 and strategy == "naive":
             context_limit_score += 0.55
-        if ragas_metrics.answer_completeness < 0.70:
+        if recall < 0.70:
             context_limit_score += 0.35
         context_limit_score = min(1.0, round(context_limit_score, 2))
 
@@ -45,7 +48,7 @@ class FailureAttributionEngine:
         if tech_entities and strategy == "naive":
             # Pure dense search often dilutes exact acronyms
             embedding_weakness_score += 0.60
-        if ragas_metrics.answer_correctness < 0.65 and context_limit_score < 0.6:
+        if precision < 0.65 and context_limit_score < 0.6:
             embedding_weakness_score += 0.30
         embedding_weakness_score = min(1.0, round(embedding_weakness_score, 2))
 

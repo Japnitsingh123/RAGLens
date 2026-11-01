@@ -9,6 +9,7 @@
 
 import os
 import time
+import math
 import re
 from typing import List, Dict, Any, Optional
 import httpx
@@ -16,6 +17,20 @@ from dotenv import load_dotenv
 from app.core.chroma_vector_store import ChromaVectorStore, global_chroma_store
 
 load_dotenv()
+
+_cross_encoder_model = None
+
+def get_cross_encoder():
+    """Singleton loader for cross-encoder/ms-marco-MiniLM-L-6-v2 neural reranker."""
+    global _cross_encoder_model
+    if _cross_encoder_model is None:
+        try:
+            os.environ["TOKENIZERS_PARALLELISM"] = "false"
+            from sentence_transformers import CrossEncoder
+            _cross_encoder_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        except Exception:
+            _cross_encoder_model = None
+    return _cross_encoder_model
 
 async def call_llm_generation(
     prompt: str,
@@ -122,21 +137,68 @@ async def execute_hybrid_bm25(query: str, top_k: int = 3, store: Optional[Chroma
         "tokens": int((len(prompt) + len(answer)) / 3.8)
     }
 
-# Strategy 3: Cohere Rerank
+# Strategy 3: Cross-Encoder / Cohere Rerank
 async def execute_cohere_rerank(query: str, top_k: int = 3, store: Optional[ChromaVectorStore] = None) -> Dict[str, Any]:
     store = store or global_chroma_store
     t0 = time.perf_counter()
-    candidates = store.similarity_search(query, top_k=top_k * 2)
+    candidates = store.similarity_search(query, top_k=top_k * 3)
 
-    q_words = set(re.findall(r"\w+", query.lower()))
+    cohere_key = os.getenv("COHERE_API_KEY", "").strip()
+    reranker = get_cross_encoder()
     scored_candidates = []
-    for doc in candidates:
-        content_words = set(re.findall(r"\w+", doc["content"].lower()))
-        jaccard = len(q_words & content_words) / (len(q_words | content_words) + 1e-5)
-        cross_score = (doc.get("score", 0.5) * 0.4) + (jaccard * 0.6)
-        scored_candidates.append({**doc, "rerank_score": cross_score})
 
-    scored_candidates.sort(key=lambda x: x["rerank_score"], reverse=True)
+    # 1. Check if Cohere Rerank API key is configured
+    if cohere_key and candidates:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.post(
+                    "https://api.cohere.com/v2/rerank",
+                    headers={"Authorization": f"Bearer {cohere_key}", "Content-Type": "application/json"},
+                    json={
+                        "model": "rerank-v3.5",
+                        "query": query,
+                        "documents": [doc["content"] for doc in candidates],
+                        "top_n": top_k
+                    }
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    for item in data.get("results", []):
+                        idx = item["index"]
+                        scored_candidates.append({
+                            **candidates[idx],
+                            "rerank_score": round(float(item["relevance_score"]), 4),
+                            "reranker_model": "cohere/rerank-v3.5"
+                        })
+        except Exception:
+            scored_candidates = []
+
+    # 2. Use Neural Cross-Encoder model (ms-marco-MiniLM-L-6-v2)
+    if not scored_candidates and reranker is not None and candidates:
+        try:
+            pairs = [[query, doc["content"]] for doc in candidates]
+            scores = reranker.predict(pairs)
+            for i, doc in enumerate(candidates):
+                raw = float(scores[i])
+                prob = 1.0 / (1.0 + math.exp(-raw))
+                scored_candidates.append({
+                    **doc,
+                    "rerank_score": round(prob, 4),
+                    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+                })
+            scored_candidates.sort(key=lambda x: x["rerank_score"], reverse=True)
+        except Exception:
+            scored_candidates = []
+
+    # 3. Dense fallback if reranker model is unavailable
+    if not scored_candidates:
+        for doc in candidates:
+            scored_candidates.append({
+                **doc,
+                "rerank_score": doc.get("score", 0.5),
+                "reranker_model": "bge-dense-similarity"
+            })
+
     reranked = scored_candidates[:top_k]
     t_ret = time.perf_counter()
     retrieval_ms = (t_ret - t0) * 1000.0
@@ -151,8 +213,8 @@ async def execute_cohere_rerank(query: str, top_k: int = 3, store: Optional[Chro
 
     return {
         "strategy": "cohere_rerank",
-        "strategy_name": "Cohere Cross-Encoder Rerank",
-        "description": "Retrieves wide candidate set from ChromaDB and applies cross-encoder semantic attention reranking.",
+        "strategy_name": "Cross-Encoder / Cohere Rerank",
+        "description": "Retrieves candidate pool from ChromaDB and applies cross-encoder neural attention model (ms-marco-MiniLM-L-6-v2) to rerank top passages.",
         "answer": answer,
         "contexts": contexts,
         "retrieved_docs": reranked,

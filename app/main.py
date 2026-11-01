@@ -181,9 +181,9 @@ async def get_strategies():
             },
             {
                 "id": "cohere_rerank",
-                "name": "Cohere Cross-Encoder Rerank",
-                "storage": "ChromaDB Candidate Pool",
-                "focus": "Deep cross-attention scoring between query and passages to prioritize top relevance."
+                "name": "Cross-Encoder / Cohere Rerank",
+                "storage": "ChromaDB Pool + ms-marco-MiniLM-L-6-v2 CrossEncoder",
+                "focus": "Deep cross-attention scoring between query and passages to prioritize top relevance using neural reranker model."
             },
             {
                 "id": "hyde",
@@ -207,7 +207,8 @@ async def get_chroma_stats():
         "collection_name": global_chroma_store.collection.name,
         "total_chunks": global_chroma_store.count(),
         "parent_documents_stored": len(global_chroma_store.parents),
-        "embedding_dimensions": 768
+        "embedding_dimensions": 384,
+        "embedding_model": "BAAI/bge-small-en-v1.5"
     }
 
 @app.get("/api/health")
@@ -216,9 +217,10 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "RAGLens",
-        "version": "2.0.0",
-        "vector_store": "ChromaDB Vector Store",
+        "version": "2.1.0",
+        "vector_store": "ChromaDB (BAAI/bge-small-en-v1.5)",
+        "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
         "orchestrator": "LangGraph Parallel StateGraph",
-        "evaluator": "Ragas LLM-as-a-Judge",
-        "gemini_api_configured": bool(os.getenv("GEMINI_API_KEY", "").strip())
+        "evaluator": "Ragas 4-Metric Engine (Faithfulness, Relevancy, Precision, Recall)",
+        "gemini_api_configured": bool(os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("GOOGLE_API_KEY", "").strip())
     }

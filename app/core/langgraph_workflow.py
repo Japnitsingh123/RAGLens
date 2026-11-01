@@ -74,16 +74,12 @@ async def node_evaluate_and_attribute(state: BenchmarkGraphState) -> Dict[str, A
     ]
     raw_results = [r for r in raw_results if r is not None]
 
-    strategy_results: List[StrategyResult] = []
-    best_score = -1.0
-    best_strategy_name = "Parent-Child Document Expansion"
-
-    for r in raw_results:
+    async def evaluate_single_strategy(r):
         strat = r["strategy"]
         contexts = r["contexts"]
         answer = r["answer"]
 
-        # 1. Ragas Evaluation (Faithfulness, Correctness, Completeness)
+        # 1. Ragas 4-Metric Evaluation
         ragas_m = await RagasEvaluator.evaluate_ragas_metrics(
             query=query,
             answer=answer,
@@ -101,7 +97,7 @@ async def node_evaluate_and_attribute(state: BenchmarkGraphState) -> Dict[str, A
             ground_truth=ground_truth
         )
 
-        strat_obj = StrategyResult(
+        return StrategyResult(
             strategy=StrategyType(strat),
             strategy_name=r["strategy_name"],
             description=r["description"],
@@ -114,15 +110,21 @@ async def node_evaluate_and_attribute(state: BenchmarkGraphState) -> Dict[str, A
             ragas_metrics=ragas_m,
             failure_attribution=attribution
         )
-        strategy_results.append(strat_obj)
 
-        composite_score = (ragas_m.faithfulness * 0.4) + (ragas_m.answer_correctness * 0.4) + (ragas_m.answer_completeness * 0.2)
+    # Evaluate all 5 strategies concurrently in parallel
+    strategy_results: List[StrategyResult] = await asyncio.gather(*[evaluate_single_strategy(r) for r in raw_results])
+
+    best_score = -1.0
+    best_strategy_name = "Parent-Child Document Expansion"
+    for strat_obj in strategy_results:
+        rm = strat_obj.ragas_metrics
+        composite_score = rm.ragas_score or ((rm.faithfulness + rm.answer_relevancy + rm.context_precision + rm.context_recall) / 4.0)
         if composite_score > best_score:
             best_score = composite_score
-            best_strategy_name = r["strategy_name"]
+            best_strategy_name = strat_obj.strategy_name
 
     summary = (
-        f"Benchmarked 5 strategies concurrently via LangGraph. "
+        f"Benchmarked 5 strategies concurrently via LangGraph with BGE-small-en-v1.5 and Neural Cross-Encoder. "
         f"Top performing architecture: '{best_strategy_name}' (Composite Ragas Score: {round(best_score * 100, 1)}%)."
     )
 

@@ -22,10 +22,14 @@ class RootCauseType(str, Enum):
     HALLUCINATION = "hallucination"
 
 class RagasMetrics(BaseModel):
-    faithfulness: float = Field(..., ge=0.0, le=1.0, description="Claims supported by retrieved context (0-1.0)")
-    answer_correctness: float = Field(..., ge=0.0, le=1.0, description="Semantic and factual accuracy vs ground truth (0-1.0)")
-    answer_completeness: float = Field(..., ge=0.0, le=1.0, description="Coverage of necessary facets in query (0-1.0)")
-    reasoning: Dict[str, str] = Field(default_factory=dict, description="Explanations for each metric score")
+    faithfulness: float = Field(..., ge=0.0, le=1.0, description="Proportion of answer claims directly supported by retrieved context (0-1.0)")
+    answer_relevancy: float = Field(..., ge=0.0, le=1.0, description="Semantic relevance of answer to user question (0-1.0)")
+    context_precision: float = Field(..., ge=0.0, le=1.0, description="Proportion of relevant context chunks ranked near the top (0-1.0)")
+    context_recall: float = Field(..., ge=0.0, le=1.0, description="Proportion of ground truth reference facts covered by retrieved context (0-1.0)")
+    ragas_score: float = Field(default=0.85, ge=0.0, le=1.0, description="Overall harmonic/mean Ragas benchmark score (0-1.0)")
+    answer_correctness: Optional[float] = Field(None, description="Legacy alias for context_precision / factual accuracy")
+    answer_completeness: Optional[float] = Field(None, description="Legacy alias for context_recall / facet coverage")
+    reasoning: Dict[str, str] = Field(default_factory=dict, description="Explanations for each of the 4 Ragas metrics")
 
 class FailureAttribution(BaseModel):
     primary_root_cause: RootCauseType = Field(..., description="Diagnosed primary failure mode")

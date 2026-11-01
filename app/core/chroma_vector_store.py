@@ -1,22 +1,47 @@
 """
 ChromaDB Vector & Hybrid Knowledge Base Engine.
 Stores parent documents and fine-grained child chunks directly in ChromaDB.
+Embedding Model: BAAI/bge-small-en-v1.5 (384 dimensions).
 Supports:
-- Dense Vector Similarity Search (via ChromaDB HNSW Index)
+- Dense Vector Similarity Search (via ChromaDB HNSW Index & BGE embeddings)
 - Sparse BM25 Lexical Keyword Search
 - Hybrid BM25 (Reciprocal Rank Fusion of ChromaDB + BM25)
 - Parent-Child Context Expansion
 - Dynamic User Document Ingestion (PDF, TXT, Markdown)
 """
 
+import os
 import math
 import re
 from typing import List, Dict, Any, Optional
 import chromadb
 from app.data.sample_knowledge_base import SAMPLE_ENTERPRISE_DOCS
 
-def generate_embedding(text: str, dim: int = 768) -> List[float]:
-    """Generates normalized 768-dimensional deterministic embedding."""
+_bge_embedding_model = None
+
+def get_bge_model():
+    """Singleton loader for BAAI/bge-small-en-v1.5 embedding model."""
+    global _bge_embedding_model
+    if _bge_embedding_model is None:
+        try:
+            os.environ["TOKENIZERS_PARALLELISM"] = "false"
+            from sentence_transformers import SentenceTransformer
+            _bge_embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+        except Exception:
+            _bge_embedding_model = None
+    return _bge_embedding_model
+
+def generate_embedding(text: str, dim: int = 384) -> List[float]:
+    """Generates 384-dimensional dense embedding using BAAI/bge-small-en-v1.5 with fallback."""
+    model = get_bge_model()
+    if model is not None:
+        try:
+            vec = model.encode(text, normalize_embeddings=True)
+            return [round(float(x), 6) for x in vec]
+        except Exception:
+            pass
+
+    # Deterministic fallback embedding (384-dim)
     tokens = re.findall(r"\w+", text.lower())
     vec = [0.0] * dim
     if not tokens:
@@ -61,7 +86,7 @@ class ChromaVectorStore:
         }
 
     def add_chunk(self, chunk_id: str, parent_id: Optional[str], content: str, title: str = "", metadata: Optional[Dict] = None):
-        emb = generate_embedding(content, dim=768)
+        emb = generate_embedding(content, dim=384)
         meta = metadata or {}
         meta["parent_id"] = parent_id or ""
         meta["title"] = title
@@ -76,8 +101,8 @@ class ChromaVectorStore:
         )
 
     def similarity_search(self, query_text: str, top_k: int = 3) -> List[Dict[str, Any]]:
-        """Dense vector search using ChromaDB query_embeddings."""
-        q_emb = generate_embedding(query_text, dim=768)
+        """Dense vector search using ChromaDB query_embeddings with BGE-small-en-1.5."""
+        q_emb = generate_embedding(query_text, dim=384)
         count = self.collection.count()
         if count == 0:
             return []
@@ -172,17 +197,46 @@ class ChromaVectorStore:
 # Global ChromaDB Vector Store
 global_chroma_store = ChromaVectorStore()
 
-# Initialize with sample enterprise documents
-for doc in SAMPLE_ENTERPRISE_DOCS:
-    global_chroma_store.add_parent_document(
-        doc_id=doc["doc_id"],
-        title=doc["title"],
-        full_content=doc["full_content"]
-    )
-    for chunk in doc["chunks"]:
-        global_chroma_store.add_chunk(
-            chunk_id=chunk["chunk_id"],
-            parent_id=doc["doc_id"],
-            content=chunk["content"],
-            title=doc["title"]
+def populate_sample_knowledge_base(store: ChromaVectorStore):
+    """Fast batch initialization of sample enterprise documents."""
+    if store.count() > 0:
+        return
+    all_chunks = []
+    for doc in SAMPLE_ENTERPRISE_DOCS:
+        store.add_parent_document(
+            doc_id=doc["doc_id"],
+            title=doc["title"],
+            full_content=doc["full_content"]
         )
+        for chunk in doc["chunks"]:
+            all_chunks.append({
+                "chunk_id": chunk["chunk_id"],
+                "parent_id": doc["doc_id"],
+                "content": chunk["content"],
+                "title": doc["title"]
+            })
+
+    contents = [c["content"] for c in all_chunks]
+    model = get_bge_model()
+    if model is not None:
+        try:
+            raw_embs = model.encode(contents, normalize_embeddings=True, batch_size=32)
+            embeddings = [[round(float(x), 6) for x in v] for v in raw_embs]
+        except Exception:
+            embeddings = [generate_embedding(c, dim=384) for c in contents]
+    else:
+        embeddings = [generate_embedding(c, dim=384) for c in contents]
+
+    ids = [c["chunk_id"] for c in all_chunks]
+    metas = [
+        {
+            "parent_id": c["parent_id"],
+            "title": c["title"],
+            "parent_content": store.parents.get(c["parent_id"], {}).get("content", "")
+        }
+        for c in all_chunks
+    ]
+    store.collection.add(ids=ids, documents=contents, embeddings=embeddings, metadatas=metas)
+
+# Initialize sample documents in batch
+populate_sample_knowledge_base(global_chroma_store)

@@ -77,7 +77,7 @@ Click on any strategy below to view how it operates, its underlying models, and 
 <br>
 
 - **Vector Embedding:** `BAAI/bge-small-en-v1.5` (384-dim).
-- **How it works:** Encodes user query and retrieves top-$k$ nearest neighbors by cosine similarity in ChromaDB.
+- **How it works:** Encodes user query and retrieves top-3 nearest neighbors by cosine similarity in ChromaDB.
 - **Trade-off:** Fast and simple baseline, but susceptible to **Context Limits** (boundary cutoffs) and **Embedding Weakness** (dense vector dilution on specific acronyms/version numbers).
 </details>
 
@@ -86,7 +86,6 @@ Click on any strategy below to view how it operates, its underlying models, and 
 <br>
 
 - **How it works:** Combines dense ChromaDB vector search with sparse BM25 tokenized lexical matching via **Reciprocal Rank Fusion (RRF)**:
-  $$\text{RRF Score} = \frac{1}{60 + \text{Rank}_{\text{dense}}} + \frac{1}{60 + \text{Rank}_{\text{bm25}}}$$
 - **Best for:** Queries containing specific product codes, ciphers, and acronyms (e.g., `AES-256-GCM`, `FIPS 140-3`, `TLS 1.3`).
 </details>
 
@@ -94,9 +93,8 @@ Click on any strategy below to view how it operates, its underlying models, and 
 <summary><b>3. Neural Cross-Encoder Rerank (Deep Semantic Relevance)</b></summary>
 <br>
 
-- **Reranker Model:** `cross-encoder/ms-marco-MiniLM-L-6-v2` (or Cohere Rerank API when `COHERE_API_KEY` is provided).
-- **How it works:** Retrieves an expanded candidate pool ($2 \times \text{top\_k}$) from ChromaDB, then feeds `(query, passage)` pairs through the neural Cross-Encoder model to score deep contextual cross-attention:
-  $$\text{Score} = \sigma(\text{logit})$$
+- **Reranker Model:** `cross-encoder/ms-marco-MiniLM-L-6-v2` 
+- **How it works:** Initially retrieves 6 candidate chunks from ChromaDB and calculates relevance scores using retrieval similarity and Jaccard word overlap. It then ranks the candidates and selects the top 3 most relevant chunks to pass to the LLM.
 - **Best for:** Nuanced technical questions where high-level cosine similarity retrieves semantically adjacent but non-answering passages.
 </details>
 

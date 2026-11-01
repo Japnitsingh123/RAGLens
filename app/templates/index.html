@@ -27,6 +27,10 @@
         </div>
       </div>
       <div class="flex items-center space-x-3">
+        <span class="hidden sm:flex items-center space-x-1.5 text-xs text-slate-300 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Gemini 2.5 Flash Active</span>
+        </span>
         <a href="/docs" target="_blank" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition">
           API Docs
         </a>
@@ -91,7 +95,13 @@
           <span class="w-6 h-6 rounded-full bg-indigo-600/20 text-indigo-400 text-xs font-bold flex items-center justify-center">2</span>
           <h2 class="text-sm font-semibold text-white">Select a Question to Evaluate 5 RAG Strategies</h2>
         </div>
-        <span id="doc-badge" class="text-xs text-indigo-400 font-medium">Sample Knowledge Base Active</span>
+        <div class="flex items-center space-x-2">
+          <span class="flex items-center space-x-1 px-2.5 py-1 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <i class="ph-bold ph-sparkle"></i>
+            <span>Powered by Gemini 2.5 Flash</span>
+          </span>
+          <span id="doc-badge" class="text-xs text-indigo-400 font-medium">Sample Knowledge Base Active</span>
+        </div>
       </div>
 
       <div id="questions-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -210,7 +220,7 @@
 
         const data = await res.json();
         document.getElementById('doc-badge').textContent = `Uploaded: ${data.title} (${data.chunks_created} Chunks in ChromaDB)`;
-        statusText.textContent = `Ingestion complete! ${data.chunks_created} chunks stored. Click any question below to compare strategies.`;
+        statusText.textContent = `Ingestion complete! ${data.chunks_created} chunks stored in ChromaDB. Gemini 2.5 Flash generated 4 benchmark questions below. Click any question to compare strategies.`;
         
         currentQuestions = data.generated_questions;
         renderQuestions(currentQuestions);

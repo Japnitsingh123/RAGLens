@@ -12,25 +12,32 @@ import time
 import re
 from typing import List, Dict, Any, Optional
 import httpx
+from dotenv import load_dotenv
 from app.core.chroma_vector_store import ChromaVectorStore, global_chroma_store
+
+load_dotenv()
 
 async def call_llm_generation(
     prompt: str,
     system_prompt: str = "You are a concise, factual technical assistant.",
-    max_tokens: int = 700
+    max_tokens: int = 1500
 ) -> str:
-    """Invokes Gemini LLM (2.5-flash, 1.5-flash) via REST API with fallback."""
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    """Invokes Gemini LLM (2.5-flash, flash-latest) via REST API with fallback."""
+    api_key = os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("GOOGLE_API_KEY", "").strip()
     if api_key:
-        models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+        models = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
         for model in models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
             payload = {
                 "contents": [{"parts": [{"text": f"{system_prompt}\n\n{prompt}"}]}],
-                "generationConfig": {"temperature": 0.2, "maxOutputTokens": max_tokens}
+                "generationConfig": {
+                    "temperature": 0.2,
+                    "maxOutputTokens": max_tokens,
+                    "thinkingConfig": {"thinkingBudget": 0}
+                }
             }
             try:
-                async with httpx.AsyncClient(timeout=12.0) as client:
+                async with httpx.AsyncClient(timeout=18.0) as client:
                     res = await client.post(url, json=payload)
                     if res.status_code == 200:
                         data = res.json()
@@ -38,7 +45,9 @@ async def call_llm_generation(
                         if candidates:
                             parts = candidates[0].get("content", {}).get("parts", [])
                             if parts:
-                                return parts[0].get("text", "").strip()
+                                text_val = parts[0].get("text", "").strip()
+                                if text_val:
+                                    return text_val
             except Exception:
                 continue
 

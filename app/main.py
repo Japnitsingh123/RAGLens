@@ -23,6 +23,9 @@ import os
 import sys
 from pathlib import Path
 from typing import Dict, Any, Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, JSONResponse

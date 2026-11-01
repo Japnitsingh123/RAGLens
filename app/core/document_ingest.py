@@ -10,9 +10,12 @@ import json
 import uuid
 from typing import List, Dict, Any, Tuple
 import httpx
+from dotenv import load_dotenv
 from pypdf import PdfReader
 from app.core.chroma_vector_store import ChromaVectorStore, global_chroma_store
 from app.core.rag_strategies import call_llm_generation
+
+load_dotenv()
 
 def extract_text_from_bytes(filename: str, content_bytes: bytes) -> str:
     """Extracts text from PDF, TXT, or Markdown bytes."""
@@ -116,7 +119,11 @@ async def generate_benchmark_questions_from_document(doc_title: str, full_text: 
         f'[{{"question": "...", "ground_truth": "...", "target_strategy_focus": "Hybrid BM25", "aspect": "Exact Acronym Match"}}]'
     )
 
-    raw_response = await call_llm_generation(prompt, system_prompt="You generate strict JSON benchmark testsets for RAG evaluation.")
+    raw_response = await call_llm_generation(
+        prompt,
+        system_prompt="You generate strict JSON benchmark testsets for RAG evaluation.",
+        max_tokens=2048
+    )
     
     # Parse JSON from response
     parsed = extract_json_array(raw_response)

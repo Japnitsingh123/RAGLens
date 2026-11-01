@@ -1,6 +1,9 @@
 import uvicorn
 import os
 import sys
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Ensure current directory is on PYTHONPATH
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))

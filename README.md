@@ -1,24 +1,39 @@
-# RAGLens: 5-Strategy RAG Evaluation & Benchmarking Platform
+<div align="center">
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
-[![MySQL 8.4+](https://img.shields.io/badge/Storage-MySQL_VECTOR(768)-4479A1?style=flat&logo=mysql)](https://dev.mysql.com)
-[![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph_Parallel-1C3C3C?style=flat)](https://langchain-ai.github.io/langgraph/)
-[![Ragas](https://img.shields.io/badge/Evaluation-Ragas_LLM--Judge-FF6F00?style=flat)](https://docs.ragas.io)
-[![Next.js 14 Style](https://img.shields.io/badge/Frontend-Next.js_14_Aesthetic-000000?style=flat&logo=next.js)](https://nextjs.org)
+# ⚡ RAGLens
+### Production RAG Evaluation & Benchmarking Platform
 
-> **Core Resume Highlight:**
+[![Live Demo](https://img.shields.io/badge/Demo-raglens.vercel.app-6366F1?style=for-the-badge&logo=vercel&logoColor=white)](https://raglens.vercel.app)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Japnitsingh123%2FRAGLens-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Japnitsingh123/RAGLens)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![MySQL](https://img.shields.io/badge/MySQL-8.4_VECTOR-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://dev.mysql.com)
+[![LangGraph](https://img.shields.io/badge/Orchestrator-LangGraph_Parallel-FF4F00?style=for-the-badge)](https://langchain-ai.github.io/langgraph/)
+
+<p align="center">
+  <b>Benchmarking 5 RAG architectures concurrently via LangGraph with MySQL vector storage & Ragas failure attribution.</b>
+</p>
+
+[**🚀 Open Live Web App**](https://raglens.vercel.app) • [**📚 Interactive API Docs**](http://localhost:8000/docs) • [**⚡ Quickstart**](#-quickstart-in-3-steps)
+
+</div>
+
+---
+
+## 📌 Executive Summary
+
 > - **Built a RAG Evaluation Platform** (Next.js 14 aesthetic, FastAPI, MySQL VECTOR) benchmarking 5 strategies—**Naive, Hybrid BM25, Cohere Rerank, HyDE, and Parent-Child**—in parallel via **LangGraph**.
 > - **Implemented an LLM-as-a-Judge & failure attribution engine** scoring **Faithfulness, Correctness, and Completeness** using **Ragas**, diagnosing root causes (*context limits, embedding weakness, hallucinations*).
 
 ---
 
-## 🌟 Key Architecture & Capabilities
+## 🧭 Interactive Architecture
 
 ```mermaid
 flowchart TD
-    Q["User Benchmark Query + Ground Truth"] --> START(["LangGraph START"])
+    Q["User Query + Ground Truth"] --> START(["LangGraph START"])
     
-    subgraph ParallelExecution ["LangGraph Concurrent 5-Node Fanout"]
+    subgraph ParallelFanout ["LangGraph Concurrent 5-Node Fanout"]
         START --> N1["1. Naive Dense RAG\n(MySQL VECTOR Cosine)"]
         START --> N2["2. Hybrid BM25 RAG\n(VECTOR + FULLTEXT RRF)"]
         START --> N3["3. Cohere Rerank\n(Cross-Encoder Attention)"]
@@ -32,47 +47,102 @@ flowchart TD
     N4 --> AGG
     N5 --> AGG
 
-    subgraph EvaluationAttribution ["Ragas Evaluation & Diagnostic Engine"]
-        AGG --> RAGAS["Ragas LLM-as-a-Judge\n• Faithfulness\n• Answer Correctness\n• Answer Completeness"]
-        RAGAS --> ATTR["Failure Attribution Engine\n• Diagnoses: Context Limits vs Embedding Weakness\n• Generates Architectural Fixes"]
+    subgraph EvaluationAttribution ["Ragas Evaluation & Root Cause Attribution"]
+        AGG --> RAGAS["Ragas LLM-as-a-Judge\n• Faithfulness\n• Correctness\n• Completeness"]
+        RAGAS --> DIAG["Failure Attribution Engine\n• Context Limits\n• Embedding Weakness\n• Hallucination"]
     end
 
-    ATTR --> END(["Interactive Dashboard & Telemetry Output"])
+    DIAG --> END(["Interactive Dashboard & Telemetry Output"])
 ```
 
 ---
 
-## 🔬 5 Benchmarked RAG Strategies
+## 🔬 The 5 Benchmarked Strategies
 
-| # | Strategy | Storage & Retrieval Mechanics | Best Suited For |
-|---|---|---|---|
-| **1** | **Naive Dense RAG** | Direct `VECTOR_DISTANCE(..., 'COSINE')` in MySQL 8.4 | Standard topical similarity queries. |
-| **2** | **Hybrid BM25 RAG** | Combines MySQL `VECTOR(768)` and MySQL `FULLTEXT` indexing via Reciprocal Rank Fusion (RRF) | Queries with exact ciphers, acronyms, or numbers (e.g. `AES-256-GCM`, `Patroni`). |
-| **3** | **Cohere Cross-Encoder Rerank** | Fetches wide candidate pool ($2 \times \text{top\_k}$) and applies deep cross-attention semantic reranking | Complex technical questions with subtle relevance nuances. |
-| **4** | **HyDE (Hypothetical Doc Embeddings)** | Generates zero-shot hypothetical answer first to bridge query-to-document semantic asymmetry | Conceptual, exploratory, or asymmetric questions. |
-| **5** | **Parent-Child Document Expansion** | Granular child chunks (100 tokens) for precision search; expands to parent document (500 tokens) | Queries that require complete context without boundary truncation. |
+Click on any strategy below to view how it works, its MySQL query pattern, and failure behavior:
+
+<details open>
+<summary><b>1. Naive Dense RAG (Baseline)</b></summary>
+<br>
+
+- **How it works:** Directly embeds the user query into a 768-dim vector and computes cosine distance against chunk embeddings in MySQL.
+- **MySQL Pattern:**
+  ```sql
+  SELECT chunk_id, content, (1 - VECTOR_DISTANCE(embedding, string_to_vector(:q_vec), 'COSINE')) AS score
+  FROM rag_documents ORDER BY score DESC LIMIT 3;
+  ```
+- **Trade-off:** Fast and simple, but vulnerable to **context limits** (boundary cutoff) and **embedding weakness** (acronym / exact number mismatch).
+</details>
+
+<details>
+<summary><b>2. Hybrid BM25 RAG (Solves Embedding Weakness)</b></summary>
+<br>
+
+- **How it works:** Fuses dense MySQL `VECTOR` search with sparse MySQL `FULLTEXT` natural language ranking using **Reciprocal Rank Fusion (RRF)**:
+  $$\text{RRF Score} = \frac{1}{60 + \text{Rank}_{\text{dense}}} + \frac{1}{60 + \text{Rank}_{\text{bm25}}}$$
+- **Best for:** Queries containing specific product codes, ciphers, and acronyms (e.g., `AES-256-GCM`, `FIPS 140-3`, `TLS 1.3`).
+</details>
+
+<details>
+<summary><b>3. Cohere Cross-Encoder Rerank (Deep Semantic Scoring)</b></summary>
+<br>
+
+- **How it works:** Fetches a wider candidate pool ($2 \times \text{top\_k}$) from MySQL, then evaluates full cross-attention interaction between the query and each passage.
+- **Best for:** Nuanced technical questions where high-level cosine similarity alone retrieves semantically adjacent but non-answering passages.
+</details>
+
+<details>
+<summary><b>4. HyDE — Hypothetical Document Embeddings (Solves Query Asymmetry)</b></summary>
+<br>
+
+- **How it works:** Uses a zero-shot LLM step to draft a hypothetical ideal answer first, then embeds that hypothetical document to search MySQL chunks.
+- **Best for:** Exploratory, conceptual, or asymmetric questions where the question vocabulary differs sharply from authoritative documentation.
+</details>
+
+<details>
+<summary><b>5. Parent-Child Chunk Expansion (Solves Context Limits)</b></summary>
+<br>
+
+- **How it works:** Embeds small child chunks (100 tokens) for high retrieval precision, then resolves the foreign key `parent_id` to pass the full enclosing parent document (500 tokens) to the generator.
+- **Best for:** Complex architectural questions where isolated chunks truncate crucial neighboring sentences.
+</details>
 
 ---
 
-## 🎯 Ragas LLM-as-a-Judge & Failure Attribution Engine
+## 🎯 Ragas LLM-as-a-Judge & Failure Attribution
 
-### 1. Ragas Evaluation Metrics
-- **Faithfulness:** Proportion of claims in the generated answer directly grounded in retrieved context:
-  $$\text{Faithfulness} = \frac{|\text{Supported Statements}|}{|\text{Total Generated Statements}|}$$
-- **Answer Correctness:** Factual and semantic alignment evaluated against expected reference/ground truth.
-- **Answer Completeness:** Degree to which the answer covers all essential facets specified in the query.
+RAGLens implements the formal **Ragas** metric formulations alongside automated root-cause diagnostics:
 
-### 2. Failure Attribution Root Cause Diagnostics
-- **Context Limits:** Diagnoses when small chunks cut off critical context boundaries (prescribing Parent-Child expansion).
-- **Embedding Weakness:** Diagnoses lexical dilution on specialized technical terms, codes, or acronyms (prescribing Hybrid BM25 or Cross-Encoder reranking).
-- **Hallucination:** Detects unsupported statements and prompts guardrail tuning.
+### 1. Ragas Metrics
+| Metric | Formulation | What It Measures |
+|---|---|---|
+| **Faithfulness** | $\frac{\text{Supported Claims in Answer}}{\text{Total Claims in Answer}}$ | Hallucination prevention: Ensures output is strictly grounded in retrieved passages. |
+| **Answer Correctness** | F1 harmonic mean of factual precision & recall vs Ground Truth | Factual accuracy against reference answers. |
+| **Answer Completeness** | Facet coverage ratio scaled by answer depth | Ensures all sub-questions in the query are addressed. |
+
+### 2. Failure Attribution Diagnostics
+<details>
+<summary><b>🔍 How Failure Attribution Works (Click to Expand)</b></summary>
+<br>
+
+When a strategy scores below thresholds, RAGLens automatically categorizes the root cause:
+- **`Context Limits`**: Detected when retrieved chunks truncate context boundaries or miss neighboring clauses.  
+  *Engineering Fix:* Upgrade to Parent-Child expansion or increase chunk size to 500+ tokens.
+- **`Embedding Weakness`**: Detected when dense cosine similarity dilutes specific technical acronyms or numbers.  
+  *Engineering Fix:* Enable Hybrid BM25 with MySQL FULLTEXT index and Reciprocal Rank Fusion.
+- **`Hallucination`**: Detected when Faithfulness drops below 80%.  
+  *Engineering Fix:* Lower generation temperature to 0.0, tighten system prompt constraints.
+</details>
 
 ---
 
 ## 🗄️ MySQL 8.4+ Native Vector Schema
 
+<details>
+<summary><b>📄 View Production MySQL DDL Schema</b></summary>
+
 ```sql
--- MySQL 8.4+ Vector Database Schema
+-- MySQL 8.4+ Production Native Vector and Full-Text Search Schema
 CREATE DATABASE IF NOT EXISTS raglens_db;
 USE raglens_db;
 
@@ -86,7 +156,7 @@ CREATE TABLE IF NOT EXISTS rag_parent_documents (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. Child Documents Table (100 tokens granular chunks with VECTOR(768))
+-- 2. Child Chunks Table (100 tokens with native VECTOR(768))
 CREATE TABLE IF NOT EXISTS rag_documents (
     id INT AUTO_INCREMENT PRIMARY KEY,
     chunk_id VARCHAR(100) NOT NULL UNIQUE,
@@ -95,7 +165,7 @@ CREATE TABLE IF NOT EXISTS rag_documents (
     content TEXT NOT NULL,
     chunk_type VARCHAR(20) DEFAULT 'child',
     metadata JSON,
-    embedding VECTOR(768), -- MySQL 8.4 native vector type
+    embedding VECTOR(768), -- MySQL 8.4+ native vector column
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_parent FOREIGN KEY (parent_id) 
         REFERENCES rag_parent_documents(doc_id) ON DELETE CASCADE,
@@ -109,73 +179,71 @@ FROM rag_documents
 ORDER BY cosine_similarity DESC
 LIMIT 3;
 ```
+</details>
 
 ---
 
-## 🚀 Quickstart & Local Run
+## ⚡ Quickstart in 3 Steps
 
-### 1. Clone & Setup
+### 1. Clone & Install
 ```bash
 git clone https://github.com/Japnitsingh123/RAGLens.git
 cd RAGLens
-python -m pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-### 2. Configure Environment (.env)
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
+### 2. Configure Environment (`.env`)
+```bash
+# Add your Gemini API key (optional - platform includes local deterministic fallback)
+echo GEMINI_API_KEY="your_api_key_here" > .env
 ```
 
-### 3. Run FastAPI Application
+### 3. Launch App
 ```bash
 python main.py
 ```
-- **Web Dashboard:** [http://localhost:8000](http://localhost:8000)
-- **Interactive Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+- 🌐 **Dashboard:** [http://localhost:8000](http://localhost:8000)
+- 📖 **Interactive Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### 4. Run Test Suite
+### Run Automated Tests
 ```bash
 pytest tests/test_raglens.py
 ```
-*(All 6 unit and integration tests execute in < 3 seconds).*
+*(All 6 unit and integration tests pass in < 3 seconds).*
 
 ---
 
-## 📡 API Reference
+## 📡 API Usage Example
 
-### `POST /api/benchmark`
-Runs all 5 strategies in parallel via LangGraph and scores them via Ragas:
-```json
-{
-  "query": "What encryption standard is used for data at rest and how are keys rotated?",
-  "ground_truth": "Data at rest is encrypted using AES-256-GCM with keys managed in AWS KMS and rotated every 90 days.",
-  "top_k": 3
-}
-```
+<details>
+<summary><b>cURL Example: Run Parallel Benchmark</b></summary>
 
-### Response
-```json
-{
-  "query": "What encryption standard is used for data at rest and how are keys rotated?",
-  "strategies_evaluated": 5,
-  "execution_mode": "LangGraph Parallel StateGraph",
-  "best_strategy": "Hybrid BM25 RAG",
-  "results": [
-    {
-      "strategy": "hybrid_bm25",
-      "strategy_name": "Hybrid BM25 RAG",
-      "latency_ms": 42.1,
-      "ragas_metrics": {
-        "faithfulness": 1.0,
-        "answer_correctness": 0.95,
-        "answer_completeness": 0.92
-      },
-      "failure_attribution": {
-        "primary_root_cause": "none",
-        "diagnosis_details": "Pipeline operating optimally.",
-        "recommendation": "Strategy is production-ready for this query profile."
-      }
-    }
-  ]
-}
+```bash
+curl -X POST "http://localhost:8000/api/benchmark" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What encryption standard is used for data at rest and how are keys rotated?",
+    "ground_truth": "Data at rest is encrypted using AES-256-GCM with keys managed in AWS KMS and automatically rotated every 90 days.",
+    "top_k": 3
+  }'
 ```
+</details>
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | Modern Next.js 14 Aesthetic (Tailwind CSS, Phosphor Icons) |
+| **Backend API** | FastAPI (Async endpoints, Pydantic v2 schemas) |
+| **Storage & Vectors** | MySQL 8.4+ Native `VECTOR(768)` & MySQL `FULLTEXT` |
+| **Orchestration** | LangGraph Parallel `StateGraph` (Concurrent 5-node fanout) |
+| **Evaluation** | Ragas LLM-as-a-Judge (Faithfulness, Correctness, Completeness) |
+| **Deployment** | Vercel Serverless Function (`api/index.py`) |
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ by Japnit Singh &bull; Licensed under the MIT License</sub>
+</div>

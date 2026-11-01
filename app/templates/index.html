@@ -3,338 +3,184 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RAGLens — 5-Strategy RAG Evaluation Platform</title>
-  <!-- Tailwind CSS via CDN -->
+  <title>RAGLens — RAG Evaluation Platform</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Phosphor Icons -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-              900: '#312e81'
-            }
-          }
-        }
-      }
-    }
-  </script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
-    body {
-      font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    code, pre {
-      font-family: 'Geist Mono', monospace;
-    }
-    .custom-scroll::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 4px;
-    }
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 0.9; }
-    }
-    .animate-glow {
-      animation: pulseGlow 2s infinite ease-in-out;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
+    body { font-family: 'Geist', -apple-system, sans-serif; }
+    code, pre { font-family: 'Geist Mono', monospace; }
   </style>
 </head>
-<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
 
-  <!-- Top Navbar -->
-  <header class="border-b border-slate-800/80 bg-[#0f172a]/70 backdrop-blur-md sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+  <!-- Top Navigation -->
+  <header class="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-          <i class="ph-bold ph-aperture text-2xl text-white"></i>
+        <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md shadow-indigo-600/30">
+          <i class="ph-bold ph-aperture text-xl"></i>
         </div>
         <div>
-          <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">RAGLens</span>
-          <span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.0 Platform</span>
+          <span class="text-lg font-bold tracking-tight text-white">RAGLens</span>
+          <span class="text-xs text-slate-400 ml-2">RAG Evaluation Platform</span>
         </div>
       </div>
-
-      <!-- Architecture Stack Badges -->
-      <div class="hidden md:flex items-center space-x-2 text-xs text-slate-400">
-        <span class="px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 font-medium text-slate-300">FastAPI</span>
-        <span class="px-2.5 py-1 rounded-md bg-sky-500/10 border border-sky-500/30 text-sky-400 font-medium">ChromaDB Vector Store</span>
-        <span class="px-2.5 py-1 rounded-md bg-violet-500/10 border border-violet-500/30 text-violet-400 font-medium">LangGraph Parallel</span>
-        <span class="px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium">Ragas Judge</span>
-      </div>
-
       <div class="flex items-center space-x-3">
-        <a href="/docs" target="_blank" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center space-x-1.5 transition">
-          <i class="ph-bold ph-book-open"></i>
-          <span>Swagger API</span>
+        <a href="/docs" target="_blank" class="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 transition">
+          API Docs
         </a>
-        <a href="https://github.com/Japnitsingh123/RAGLens" target="_blank" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white flex items-center space-x-1.5 shadow-md shadow-indigo-600/30 transition">
-          <i class="ph-bold ph-github-logo text-sm"></i>
+        <a href="https://github.com/Japnitsingh123/RAGLens" target="_blank" class="text-xs text-white px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition flex items-center space-x-1.5">
+          <i class="ph-bold ph-github-logo"></i>
           <span>GitHub</span>
         </a>
       </div>
     </div>
   </header>
 
-  <!-- Hero Header -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
     
+    <!-- Hero Title -->
     <div>
-      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-        RAG Evaluation Platform
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+        RAG Strategy Evaluation & Benchmarking
       </h1>
-      <p class="mt-2 text-base text-slate-400 max-w-4xl">
-        Benchmarking 5 retrieval architectures—<span class="text-indigo-400 font-medium">Naive</span>, <span class="text-violet-400 font-medium">Hybrid BM25</span>, <span class="text-pink-400 font-medium">Cohere Rerank</span>, <span class="text-amber-400 font-medium">HyDE</span>, and <span class="text-emerald-400 font-medium">Parent-Child</span>—in parallel via LangGraph with ChromaDB vector storage & Ragas failure attribution.
+      <p class="text-sm text-slate-400 mt-1">
+        Upload any technical document. The system stores it in ChromaDB, synthesizes evaluation questions, and benchmarks 5 RAG strategies in parallel via LangGraph.
       </p>
     </div>
 
-    <!-- Document Upload & Synthetic Benchmark Question Generator -->
-    <div class="bg-[#111827] border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-800/80 mb-4">
+    <!-- STEP 1: Upload Document -->
+    <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
         <div class="flex items-center space-x-2">
-          <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
-            <i class="ph-bold ph-upload-simple text-lg"></i>
-          </div>
-          <div>
-            <h2 class="text-sm font-bold text-white tracking-tight">Ingest Custom Document & Auto-Generate Evaluation Testset</h2>
-            <p class="text-xs text-slate-400">Upload technical docs (.pdf, .txt, .md) to store in ChromaDB knowledge base. The AI will synthesize questions targeting all 5 strategies.</p>
-          </div>
+          <span class="w-6 h-6 rounded-full bg-indigo-600/20 text-indigo-400 text-xs font-bold flex items-center justify-center">1</span>
+          <h2 class="text-sm font-semibold text-white">Upload Technical Document</h2>
         </div>
+        <span class="text-xs text-slate-400">Supported: PDF, TXT, Markdown, or raw text</span>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Document Title:</label>
-          <input id="doc-title-input" type="text" class="w-full bg-slate-900 border border-slate-700/90 rounded-xl px-3.5 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500" placeholder="e.g. Distributed Auth & Token Rotation" />
+          <label class="block text-xs font-medium text-slate-300 mb-1">Document Title (Optional):</label>
+          <input id="doc-title-input" type="text" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500" placeholder="e.g. System Security & Architecture" />
           
-          <label class="block text-xs font-semibold text-slate-300 mt-3 mb-1">Upload File (.pdf, .txt, .md):</label>
-          <input id="doc-file-input" type="file" accept=".pdf,.txt,.md" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-500/10 file:text-sky-400 hover:file:bg-sky-500/20 cursor-pointer bg-slate-900 rounded-xl p-1 border border-slate-700/80" />
+          <label class="block text-xs font-medium text-slate-300 mt-3 mb-1">Upload File:</label>
+          <input id="doc-file-input" type="file" accept=".pdf,.txt,.md" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700 cursor-pointer bg-slate-950 rounded-lg p-1 border border-slate-800" />
         </div>
 
         <div class="md:col-span-2">
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Or Paste Raw Technical Documentation:</label>
-          <textarea id="doc-text-input" rows="4" class="w-full bg-slate-900 border border-slate-700/90 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none font-mono" placeholder="Paste technical document text here if not uploading a file..."></textarea>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Or Paste Text Directly:</label>
+          <textarea id="doc-text-input" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none font-mono" placeholder="Paste text here if you don't have a file ready..."></textarea>
         </div>
       </div>
 
-      <div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800/80">
-        <span class="text-xs text-slate-400 flex items-center space-x-1.5">
-          <i class="ph-bold ph-database text-sky-400"></i>
-          <span>Auto-splits into 500t parent docs & 100t child chunks with ChromaDB Vector Store</span>
-        </span>
-        <button id="upload-doc-btn" onclick="uploadDocument()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-semibold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-sky-600/20 transition transform active:scale-95">
-          <i class="ph-bold ph-sparkle"></i>
-          <span>Ingest & Generate Benchmark Questions</span>
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+        <span id="upload-status" class="text-xs text-slate-400">Ready to ingest into ChromaDB knowledge base.</span>
+        <button id="upload-btn" onclick="handleDocumentUpload()" class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs flex items-center justify-center space-x-2 transition shadow-md shadow-indigo-600/20">
+          <i class="ph-bold ph-upload-simple"></i>
+          <span>Upload & Generate Questions</span>
         </button>
       </div>
+    </div>
 
-      <!-- Generated Questions Container -->
-      <div id="generated-questions-panel" class="hidden mt-6 pt-5 border-t border-slate-800">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center space-x-1.5">
-            <i class="ph-bold ph-lightning"></i>
-            <span>AI-Synthesized Evaluation Testset (Click any to benchmark 5 strategies):</span>
-          </span>
-          <span id="ingestion-stats-badge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-300 border border-sky-500/20"></span>
+    <!-- STEP 2: Generated Questions Section -->
+    <div id="questions-section" class="bg-slate-900/60 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <span class="w-6 h-6 rounded-full bg-indigo-600/20 text-indigo-400 text-xs font-bold flex items-center justify-center">2</span>
+          <h2 class="text-sm font-semibold text-white">Select a Question to Evaluate 5 RAG Strategies</h2>
         </div>
-        <div id="generated-questions-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <!-- Dynamic generated question cards -->
-        </div>
+        <span id="doc-badge" class="text-xs text-indigo-400 font-medium">Sample Knowledge Base Active</span>
+      </div>
+
+      <div id="questions-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Questions injected dynamically -->
       </div>
     </div>
 
-    <!-- Interactive Benchmarking Input Card -->
-    <div id="benchmark-runner-card" class="bg-[#111827] border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-      <!-- Glow decoration -->
-      <div class="absolute -right-20 -top-20 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
-
-      <div class="space-y-4">
-        <!-- Preset pills -->
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-2">QUICK BENCHMARK PRESETS (Click to Load):</label>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="loadPreset(0)" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-white transition flex items-center space-x-1">
-              <i class="ph-bold ph-key text-indigo-400"></i>
-              <span>Exact Cipher Match (Tests Hybrid BM25)</span>
-            </button>
-            <button onclick="loadPreset(1)" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-white transition flex items-center space-x-1">
-              <i class="ph-bold ph-git-fork text-pink-400"></i>
-              <span>High Availability SLAs (Tests Cohere Rerank)</span>
-            </button>
-            <button onclick="loadPreset(2)" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-white transition flex items-center space-x-1">
-              <i class="ph-bold ph-tree-structure text-emerald-400"></i>
-              <span>Broad Context Extraction (Tests Parent-Child)</span>
-            </button>
-            <button onclick="loadPreset(3)" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-white transition flex items-center space-x-1">
-              <i class="ph-bold ph-sparkle text-amber-400"></i>
-              <span>Conceptual Asymmetric Query (Tests HyDE)</span>
-            </button>
-          </div>
+    <!-- STEP 3: 5 Strategies Comparison Section -->
+    <div id="comparison-section" class="hidden space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+          <span class="w-6 h-6 rounded-full bg-emerald-600/20 text-emerald-400 text-xs font-bold flex items-center justify-center">3</span>
+          <h2 class="text-sm font-semibold text-white">5 Strategies Parallel Benchmark Results (via LangGraph)</h2>
         </div>
-
-        <!-- Query Form -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">RAG Benchmark Query:</label>
-            <textarea id="query-input" rows="3" class="w-full bg-slate-900 border border-slate-700/90 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none" placeholder="Enter evaluation query..."></textarea>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Ground Truth / Expected Reference (For Correctness):</label>
-            <textarea id="ground-truth-input" rows="3" class="w-full bg-slate-900 border border-slate-700/90 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none" placeholder="Optional reference answer to calculate Ragas factual correctness..."></textarea>
-          </div>
-        </div>
-
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-          <div class="flex items-center space-x-4 text-xs text-slate-400">
-            <span class="flex items-center space-x-1.5">
-              <i class="ph-bold ph-database text-sky-400"></i>
-              <span>Storage: ChromaDB Vector Store</span>
-            </span>
-            <span class="flex items-center space-x-1.5">
-              <i class="ph-bold ph-cpu text-violet-400"></i>
-              <span>Concurrency: LangGraph 5-Node Fanout</span>
-            </span>
-          </div>
-
-          <button id="run-btn" onclick="runBenchmark()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30 transition transform active:scale-95">
-            <i class="ph-bold ph-play"></i>
-            <span>Benchmark 5 Strategies in Parallel</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- LangGraph Execution Flow Visualizer -->
-    <div id="flow-visualizer" class="hidden bg-[#111827]/80 border border-indigo-500/30 rounded-2xl p-4 transition-all">
-      <div class="text-xs font-semibold text-indigo-400 mb-3 flex items-center space-x-2">
-        <span class="inline-block w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
-        <span>LANGGRAPH PARALLEL WORKFLOW ACTIVE:</span>
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-        <div class="p-2.5 rounded-lg bg-slate-800/80 border border-indigo-500/40 text-slate-200">
-          <div class="font-bold text-indigo-400">Node 1: Naive</div>
-          <div class="text-[10px] text-slate-400">ChromaDB Dense</div>
-        </div>
-        <div class="p-2.5 rounded-lg bg-slate-800/80 border border-violet-500/40 text-slate-200">
-          <div class="font-bold text-violet-400">Node 2: Hybrid BM25</div>
-          <div class="text-[10px] text-slate-400">Chroma + BM25 RRF</div>
-        </div>
-        <div class="p-2.5 rounded-lg bg-slate-800/80 border border-pink-500/40 text-slate-200">
-          <div class="font-bold text-pink-400">Node 3: Cohere Rerank</div>
-          <div class="text-[10px] text-slate-400">Cross-Encoder Scoring</div>
-        </div>
-        <div class="p-2.5 rounded-lg bg-slate-800/80 border border-amber-500/40 text-slate-200">
-          <div class="font-bold text-amber-400">Node 4: HyDE</div>
-          <div class="text-[10px] text-slate-400">Hypothetical Doc Embedding</div>
-        </div>
-        <div class="p-2.5 rounded-lg bg-slate-800/80 border border-emerald-500/40 text-slate-200">
-          <div class="font-bold text-emerald-400">Node 5: Parent-Child</div>
-          <div class="text-[10px] text-slate-400">100t Child &rarr; 500t Parent</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Benchmark Results Section -->
-    <div id="results-container" class="hidden space-y-6">
-      
-      <!-- Executive Summary Banner -->
-      <div class="bg-gradient-to-r from-indigo-900/40 via-violet-900/30 to-slate-900/80 border border-indigo-500/30 rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Benchmark Winner & Attribution</div>
-          <div id="winner-badge" class="text-xl font-bold text-white mt-1">Parent-Child Document Expansion</div>
-          <p id="summary-text" class="text-sm text-slate-300 mt-1 max-w-3xl"></p>
-        </div>
-        <div class="px-4 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-xs text-slate-300">
-          <span class="text-slate-400">Execution Mode:</span>
-          <span id="exec-mode" class="font-semibold text-indigo-400 ml-1">LangGraph StateGraph</span>
-        </div>
+        <div id="winner-tag" class="text-xs font-medium text-emerald-400 px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20"></div>
       </div>
 
-      <!-- Strategy Comparison Grid (5 Cards) -->
-      <div>
-        <h2 class="text-lg font-bold text-white mb-4 flex items-center space-x-2">
-          <i class="ph-bold ph-chart-bar-horizontal text-indigo-400"></i>
-          <span>5-Strategy Comparative Performance & Failure Attribution</span>
-        </h2>
-
-        <div id="strategy-cards-grid" class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <!-- Dynamic strategy cards injected via JS -->
-        </div>
+      <!-- Evaluated Query Details -->
+      <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl p-4 text-xs space-y-1">
+        <div class="text-slate-400"><strong>Evaluated Question:</strong> <span id="active-question-text" class="text-slate-200"></span></div>
+        <div class="text-slate-400"><strong>Ground Truth Reference:</strong> <span id="active-gt-text" class="text-slate-300 italic"></span></div>
       </div>
 
+      <!-- 5 Comparison Cards Grid -->
+      <div id="strategies-grid" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <!-- 5 Strategy Cards injected dynamically -->
+      </div>
     </div>
 
   </main>
 
-  <footer class="border-t border-slate-800/80 bg-[#0f172a]/50 py-6 text-center text-xs text-slate-500">
-    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-      <div>RAGLens &mdash; Built with Next.js 14 Aesthetic, FastAPI, ChromaDB, LangGraph, & Ragas</div>
-      <div>Deployed on Vercel &bull; Production Ready</div>
+  <footer class="border-t border-slate-800/60 bg-slate-900/30 py-6 text-center text-xs text-slate-500">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>RAGLens &mdash; Next.js 14 Aesthetic &bull; FastAPI &bull; ChromaDB &bull; LangGraph &bull; Ragas</div>
+      <div>Production Ready</div>
     </div>
   </footer>
 
   <script>
-    const PRESETS = [
+    // Default sample questions loaded on startup
+    const DEFAULT_QUESTIONS = [
       {
-        query: "What encryption standard is used for data at rest and how are keys rotated?",
-        ground_truth: "Data at rest is encrypted using AES-256-GCM with keys managed in AWS KMS and automatically rotated every 90 days."
+        question: "What encryption standard is used for data at rest and how are keys rotated?",
+        ground_truth: "Data at rest is encrypted using AES-256-GCM with keys managed in AWS KMS and automatically rotated every 90 days.",
+        target_strategy_focus: "Hybrid BM25",
+        aspect: "Exact Cipher Match"
       },
       {
-        query: "What is the database failover mechanism and the guaranteed RTO and RPO?",
-        ground_truth: "Automated failover is handled by MySQL Router and Orchestrator within 25 seconds, providing an RPO of zero and RTO under 30 seconds."
+        question: "What is the database failover mechanism and the guaranteed RTO and RPO?",
+        ground_truth: "Automated failover is handled by Patroni/Orchestrator within 25 seconds, achieving RPO of zero and RTO under 30 seconds.",
+        target_strategy_focus: "Cohere Rerank",
+        aspect: "Nuanced Passage Alignment"
       },
       {
-        query: "Explain how vector indexing is configured in MySQL including VECTOR(768), fulltext indexing, and parent-child token sizes.",
-        ground_truth: "MySQL 8.4 uses VECTOR(768) columns with VECTOR_DISTANCE cosine metric and FULLTEXT indexing, storing 500 tokens in parent chunks and 100 tokens in child chunks."
+        question: "Explain the complete vector indexing architecture including dimensions and parent-child chunk sizes.",
+        ground_truth: "Vector embeddings use 768 dimensions, with parent documents storing 500 tokens of rich context and child chunks storing 100 tokens.",
+        target_strategy_focus: "Parent-Child",
+        aspect: "Broad Context Expansion"
       },
       {
-        query: "How does the system prevent denial of service and enforce request throttling?",
-        ground_truth: "The platform enforces a distributed sliding-window token bucket algorithm in Redis with 1,000 req/min and HTTP 429 responses."
+        question: "How does the system prevent denial of service and enforce request throttling?",
+        ground_truth: "The platform enforces a distributed sliding-window token bucket algorithm in Redis with 1,000 req/min and HTTP 429 responses.",
+        target_strategy_focus: "HyDE",
+        aspect: "Conceptual Asymmetric Query"
       }
     ];
 
-    function loadPreset(idx) {
-      const p = PRESETS[idx];
-      document.getElementById('query-input').value = p.query;
-      document.getElementById('ground-truth-input').value = p.ground_truth;
-    }
+    let currentQuestions = [...DEFAULT_QUESTIONS];
 
-    function toggleModal(id) {
-      const modal = document.getElementById(id);
-      modal.classList.toggle('hidden');
-    }
-
-    // Default load preset 0
     window.addEventListener('DOMContentLoaded', () => {
-      loadPreset(0);
+      renderQuestions(currentQuestions);
     });
 
-    async function uploadDocument() {
+    async function handleDocumentUpload() {
       const fileInput = document.getElementById('doc-file-input');
       const textInput = document.getElementById('doc-text-input').value.trim();
       const titleInput = document.getElementById('doc-title-input').value.trim();
-      const uploadBtn = document.getElementById('upload-doc-btn');
+      const uploadBtn = document.getElementById('upload-btn');
+      const statusText = document.getElementById('upload-status');
       const file = fileInput.files[0];
 
       if (!file && !textInput) {
-        alert("Please select a file (.pdf, .txt, .md) or paste document content.");
+        alert("Please select a file (.pdf, .txt, .md) or paste text.");
         return;
       }
 
       uploadBtn.disabled = true;
-      uploadBtn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i><span>Ingesting to MySQL & Synthesizing Questions...</span>`;
+      uploadBtn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i><span>Ingesting & Generating...</span>`;
+      statusText.textContent = "Storing document chunks in ChromaDB and generating testset...";
 
       try {
         let res;
@@ -351,7 +197,7 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-              title: titleInput || 'Custom Ingested Document',
+              title: titleInput || 'Uploaded Document',
               content: textInput
             })
           });
@@ -359,189 +205,158 @@
 
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.detail || "Upload failed with status " + res.status);
+          throw new Error(errData.detail || "Upload failed (" + res.status + ")");
         }
 
         const data = await res.json();
-        renderGeneratedQuestions(data);
+        document.getElementById('doc-badge').textContent = `Uploaded: ${data.title} (${data.chunks_created} Chunks in ChromaDB)`;
+        statusText.textContent = `Ingestion complete! ${data.chunks_created} chunks stored. Click any question below to compare strategies.`;
+        
+        currentQuestions = data.generated_questions;
+        renderQuestions(currentQuestions);
+
+        // Clear input
+        document.getElementById('doc-text-input').value = '';
+        fileInput.value = '';
       } catch (err) {
-        alert("Upload & Question Generation Error: " + err.message);
+        alert("Upload error: " + err.message);
+        statusText.textContent = "Upload failed: " + err.message;
       } finally {
         uploadBtn.disabled = false;
-        uploadBtn.innerHTML = `<i class="ph-bold ph-sparkle"></i><span>Ingest & Generate Benchmark Questions</span>`;
+        uploadBtn.innerHTML = `<i class="ph-bold ph-upload-simple"></i><span>Upload & Generate Questions</span>`;
       }
     }
 
-    function renderGeneratedQuestions(data) {
-      const panel = document.getElementById('generated-questions-panel');
-      const list = document.getElementById('generated-questions-list');
-      const badge = document.getElementById('ingestion-stats-badge');
+    function renderQuestions(questions) {
+      const grid = document.getElementById('questions-grid');
+      grid.innerHTML = '';
 
-      badge.textContent = `${data.parents_ingested} Parents • ${data.chunks_created} Chunks in ChromaDB`;
-      list.innerHTML = '';
-
-      data.generated_questions.forEach((q, idx) => {
+      questions.forEach((q, idx) => {
         const card = document.createElement('div');
-        card.className = "p-3.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-sky-500/50 flex flex-col justify-between space-y-2 transition";
+        card.className = "bg-slate-950 border border-slate-800 hover:border-indigo-500/60 rounded-lg p-3.5 flex flex-col justify-between space-y-3 transition group cursor-pointer";
+        card.onclick = () => runStrategyComparison(q.question, q.ground_truth, idx);
+
         card.innerHTML = `
           <div>
             <div class="flex items-center justify-between text-[11px] mb-1">
-              <span class="font-semibold text-sky-400">${q.target_strategy_focus} Focus</span>
-              <span class="text-slate-400">${q.aspect}</span>
+              <span class="font-semibold text-indigo-400">${q.target_strategy_focus || 'Strategy'} Test</span>
+              <span class="text-slate-500">${q.aspect || 'Evaluation'}</span>
             </div>
-            <p class="text-xs font-medium text-slate-100">${q.question}</p>
-            <p class="text-[11px] text-slate-400 mt-1.5 line-clamp-2 italic"><strong>Ground Truth:</strong> ${q.ground_truth}</p>
+            <p class="text-xs font-medium text-slate-100 group-hover:text-indigo-200 transition">${q.question}</p>
+            <p class="text-[11px] text-slate-400 mt-1 line-clamp-2"><strong>Ground Truth:</strong> ${q.ground_truth}</p>
           </div>
-          <button onclick="loadAndBenchmarkQuestion('${escapeJs(q.question)}', '${escapeJs(q.ground_truth)}')" class="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center justify-center space-x-1.5 transition">
-            <i class="ph-bold ph-play"></i>
-            <span>Benchmark 5 Strategies on this Question</span>
+          <button class="w-full text-xs font-semibold py-1.5 rounded bg-indigo-600/10 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/20 transition flex items-center justify-center space-x-1.5">
+            <i class="ph-bold ph-play text-xs"></i>
+            <span>Compare 5 Strategies</span>
           </button>
         `;
-        list.appendChild(card);
+        grid.appendChild(card);
       });
-
-      panel.classList.remove('hidden');
     }
 
-    function escapeJs(str) {
-      return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    }
+    async function runStrategyComparison(question, groundTruth, activeIdx) {
+      const section = document.getElementById('comparison-section');
+      const grid = document.getElementById('strategies-grid');
+      const activeQ = document.getElementById('active-question-text');
+      const activeGt = document.getElementById('active-gt-text');
+      const winnerTag = document.getElementById('winner-tag');
 
-    function loadAndBenchmarkQuestion(question, groundTruth) {
-      document.getElementById('query-input').value = question;
-      document.getElementById('ground-truth-input').value = groundTruth;
-      const card = document.getElementById('benchmark-runner-card');
-      card.scrollIntoView({ behavior: 'smooth' });
-      runBenchmark();
-    }
+      section.classList.remove('hidden');
+      activeQ.textContent = question;
+      activeGt.textContent = groundTruth || 'None';
+      winnerTag.innerHTML = `<i class="ph-bold ph-spinner animate-spin mr-1"></i> Running 5 Strategies in Parallel via LangGraph...`;
 
-    async function runBenchmark() {
-      const query = document.getElementById('query-input').value.trim();
-      const groundTruth = document.getElementById('ground-truth-input').value.trim();
-      if (!query) {
-        alert("Please enter a benchmark query.");
-        return;
-      }
+      grid.innerHTML = `
+        <div class="col-span-1 md:col-span-5 p-8 text-center text-slate-400 bg-slate-900/40 rounded-xl border border-slate-800">
+          <i class="ph-bold ph-spinner animate-spin text-2xl text-indigo-400 mb-2 block mx-auto"></i>
+          <span>Executing Naive, Hybrid BM25, Cohere Rerank, HyDE, and Parent-Child concurrently in ChromaDB...</span>
+        </div>
+      `;
 
-      const runBtn = document.getElementById('run-btn');
-      const flowVisualizer = document.getElementById('flow-visualizer');
-      const resultsContainer = document.getElementById('results-container');
-
-      runBtn.disabled = true;
-      runBtn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i><span>Executing LangGraph Parallel Graph...</span>`;
-      flowVisualizer.classList.remove('hidden');
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       try {
         const res = await fetch('/api/benchmark', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ query: query, ground_truth: groundTruth || null, top_k: 3 })
+          body: JSON.stringify({ query: question, ground_truth: groundTruth, top_k: 3 })
         });
 
-        if (!res.ok) throw new Error("Benchmark failed with status " + res.status);
+        if (!res.ok) throw new Error("Benchmarking failed (" + res.status + ")");
         const data = await res.json();
-        renderResults(data);
+        renderStrategyCards(data);
       } catch (err) {
-        alert("Benchmarking error: " + err.message);
-      } finally {
-        runBtn.disabled = false;
-        runBtn.innerHTML = `<i class="ph-bold ph-play"></i><span>Benchmark 5 Strategies in Parallel</span>`;
+        grid.innerHTML = `<div class="col-span-5 text-red-400 text-xs p-4 bg-red-950/20 border border-red-900 rounded-lg">Error: ${err.message}</div>`;
+        winnerTag.textContent = "Error";
       }
     }
 
-    function renderResults(data) {
-      document.getElementById('results-container').classList.remove('hidden');
-      document.getElementById('winner-badge').textContent = data.best_strategy;
-      document.getElementById('summary-text').textContent = data.executive_summary;
-      document.getElementById('exec-mode').textContent = data.execution_mode;
-
-      const grid = document.getElementById('strategy-cards-grid');
+    function renderStrategyCards(data) {
+      document.getElementById('winner-tag').textContent = `Top Performer: ${data.best_strategy}`;
+      const grid = document.getElementById('strategies-grid');
       grid.innerHTML = '';
 
-      const strategyColorMap = {
-        'naive': 'border-slate-700 bg-slate-900/60',
-        'hybrid_bm25': 'border-violet-500/40 bg-violet-950/20',
-        'cohere_rerank': 'border-pink-500/40 bg-pink-950/20',
-        'hyde': 'border-amber-500/40 bg-amber-950/20',
-        'parent_child': 'border-emerald-500/40 bg-emerald-950/20'
-      };
-
-      const rootCauseBadgeMap = {
-        'none': '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Safe (Optimal)</span>',
-        'context_limits': '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">Context Limits</span>',
-        'embedding_weakness': '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-500/20 text-sky-400 border border-sky-500/30">Embedding Weakness</span>',
-        'hallucination': '<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-500/20 text-red-400 border border-red-500/30">Hallucination</span>'
+      const rootCauseColors = {
+        'none': 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+        'context_limits': 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+        'embedding_weakness': 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+        'hallucination': 'text-red-400 bg-red-500/10 border-red-500/20'
       };
 
       data.results.forEach(item => {
-        const strat = item.strategy;
         const ragas = item.ragas_metrics;
         const attr = item.failure_attribution;
-        const cardStyle = strategyColorMap[strat] || 'border-slate-800 bg-slate-900';
+        const causeClass = rootCauseColors[attr.primary_root_cause] || 'text-slate-400 bg-slate-800';
 
         const card = document.createElement('div');
-        card.className = `border rounded-xl p-4 flex flex-col justify-between space-y-3 ${cardStyle}`;
+        card.className = "bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between space-y-3";
 
         card.innerHTML = `
           <div>
             <!-- Header -->
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-white tracking-tight">${item.strategy_name}</span>
+            <div class="border-b border-slate-800 pb-2">
+              <div class="text-xs font-bold text-white tracking-tight">${item.strategy_name}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">${item.description}</div>
             </div>
-            <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">${item.description}</p>
 
-            <!-- Ragas Score Gauges -->
-            <div class="mt-3 p-2.5 rounded-lg bg-black/40 border border-slate-800 space-y-2">
-              <div class="flex items-center justify-between text-[11px]">
+            <!-- Ragas Scores -->
+            <div class="mt-2.5 p-2 rounded bg-slate-950 border border-slate-800/80 space-y-1.5 text-[11px]">
+              <div class="flex items-center justify-between">
                 <span class="text-slate-400">Faithfulness:</span>
                 <span class="font-bold ${ragas.faithfulness >= 0.8 ? 'text-emerald-400' : 'text-amber-400'}">${Math.round(ragas.faithfulness * 100)}%</span>
               </div>
-              <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-                <div class="bg-emerald-500 h-full" style="width: ${ragas.faithfulness * 100}%"></div>
-              </div>
-
-              <div class="flex items-center justify-between text-[11px]">
+              <div class="flex items-center justify-between">
                 <span class="text-slate-400">Correctness:</span>
                 <span class="font-bold ${ragas.answer_correctness >= 0.8 ? 'text-indigo-400' : 'text-amber-400'}">${Math.round(ragas.answer_correctness * 100)}%</span>
               </div>
-              <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-                <div class="bg-indigo-500 h-full" style="width: ${ragas.answer_correctness * 100}%"></div>
-              </div>
-
-              <div class="flex items-center justify-between text-[11px]">
+              <div class="flex items-center justify-between">
                 <span class="text-slate-400">Completeness:</span>
                 <span class="font-bold ${ragas.answer_completeness >= 0.8 ? 'text-violet-400' : 'text-amber-400'}">${Math.round(ragas.answer_completeness * 100)}%</span>
               </div>
-              <div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-                <div class="bg-violet-500 h-full" style="width: ${ragas.answer_completeness * 100}%"></div>
-              </div>
             </div>
 
-            <!-- Failure Attribution -->
-            <div class="mt-3">
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-[10px] font-bold text-slate-400 uppercase">Diagnosed Root Cause:</span>
-                ${rootCauseBadgeMap[attr.primary_root_cause] || attr.primary_root_cause}
+            <!-- Root Cause Attribution -->
+            <div class="mt-2.5">
+              <div class="text-[10px] font-semibold text-slate-400 uppercase mb-1">Diagnosed Root Cause:</div>
+              <div class="text-[10px] font-semibold px-2 py-0.5 rounded border inline-block ${causeClass}">
+                ${formatCause(attr.primary_root_cause)}
               </div>
-              <p class="text-[11px] text-slate-300 bg-slate-950/60 p-2 rounded-lg border border-slate-800/80 leading-relaxed">
+              <p class="text-[10px] text-slate-300 mt-1.5 leading-relaxed bg-slate-950/60 p-1.5 rounded border border-slate-800/80">
                 ${attr.diagnosis_details}
               </p>
-              <div class="mt-1.5 text-[10px] text-indigo-300/90 italic">
-                &bull; Fix: ${attr.recommendation}
-              </div>
             </div>
 
-            <!-- Answer Preview -->
-            <div class="mt-3">
-              <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Synthesized Answer:</span>
-              <p class="text-[11px] text-slate-200 bg-slate-900/90 p-2 rounded-lg border border-slate-800 max-h-24 overflow-y-auto custom-scroll leading-relaxed">
+            <!-- Generated Answer -->
+            <div class="mt-2.5">
+              <div class="text-[10px] font-semibold text-slate-400 uppercase mb-1">Generated Answer:</div>
+              <p class="text-[11px] text-slate-200 bg-slate-950 p-2 rounded border border-slate-800 max-h-24 overflow-y-auto leading-relaxed">
                 ${item.answer}
               </p>
             </div>
           </div>
 
-          <!-- Footer Telemetry -->
-          <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+          <!-- Latency & Tokens -->
+          <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
             <span>Latency: <strong class="text-white">${item.latency_ms}ms</strong></span>
             <span>Tokens: <strong class="text-white">${item.total_tokens}</strong></span>
           </div>
@@ -549,6 +364,14 @@
 
         grid.appendChild(card);
       });
+    }
+
+    function formatCause(cause) {
+      if (cause === 'none') return 'Optimal (Safe)';
+      if (cause === 'context_limits') return 'Context Limits';
+      if (cause === 'embedding_weakness') return 'Embedding Weakness';
+      if (cause === 'hallucination') return 'Hallucination';
+      return cause;
     }
   </script>
 </body>

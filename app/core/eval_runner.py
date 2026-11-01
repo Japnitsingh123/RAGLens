@@ -49,8 +49,6 @@ class RAGLensRunner:
                 chunk_overlap=cfg.chunk_overlap,
                 search_type=cfg.search_type,
                 top_k=cfg.top_k,
-                enable_cache=cfg.semantic_cache_enabled,
-                cache_threshold=cfg.cache_similarity_threshold,
                 enable_guardrails=cfg.security_guardrails_enabled
             )
             # If custom documents provided, ingest them
@@ -97,8 +95,7 @@ class RAGLensRunner:
         quality_summary = self.quality_eval.summarize(quality_item_results)
 
         # Summarize Performance
-        cache_stats = engine.semantic_cache.get_stats() if not is_external else {"hit_rate_pct": 0, "hits": 0, "misses": len(query_records)}
-        perf_summary = self.perf_eval.evaluate(query_records, cache_stats)
+        perf_summary = self.perf_eval.evaluate(query_records)
 
         # 3. Security Red-Teaming Suite
         sec_results: List[AdversarialSecurityTest] = []
@@ -181,12 +178,7 @@ class RAGLensRunner:
         if perf_summary.avg_response_latency_ms < 150.0:
             what_is_working.append(f"Fast Response Latency: Average of {perf_summary.avg_response_latency_ms}ms per query.")
         else:
-            what_needs_improvement.append(f"Response Latency ({perf_summary.avg_response_latency_ms}ms) is high. Enable semantic caching to drop latency.")
-
-        if perf_summary.cache_hits > 0:
-            what_is_working.append(f"Semantic Cache is active ({perf_summary.semantic_cache_hit_rate_pct}% hit rate, 99% faster repeat queries).")
-        else:
-            what_needs_improvement.append("Semantic Cache had 0 hits in this run. Queries can be cached for instant sub-millisecond responses.")
+            what_needs_improvement.append(f"Response Latency ({perf_summary.avg_response_latency_ms}ms): Consider chunk pruning or streaming generation.")
 
         # Security assessments
         if security_summary.failed_tests == 0:
@@ -202,8 +194,6 @@ class RAGLensRunner:
             recomms.append("Context Recall: Enable Hybrid Search (BM25 + Dense) or increase Top-K from 2 to 4.")
         if security_summary.failed_tests > 0:
             recomms.append(f"Security Alert: {security_summary.failed_tests} adversarial injection test(s) failed. Enable RAGLens Guardrails.")
-        if perf_summary.semantic_cache_hit_rate_pct < 20.0 and cfg.semantic_cache_enabled:
-            recomms.append("Semantic Cache: Consider lowering similarity threshold from 0.92 to 0.88 to capture paraphrased questions.")
         if not recomms:
             recomms.append("All tests passing. System is ready for production deployment.")
 

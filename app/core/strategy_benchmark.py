@@ -13,7 +13,6 @@ class StrategyBenchmarkRunner:
     1. Strategy A: Naive Vector Search (Dense Cosine Similarity)
     2. Strategy B: Hybrid Search (BM25 + Dense Reciprocal Rank Fusion)
     3. Strategy C: Fine-Grained Chunking (256-char window)
-    4. Strategy D: Semantic Cache Enabled (Cold vs Warm speedup)
     """
     def __init__(self, raw_text: str, test_cases: List[Dict[str, Any]]):
         self.raw_text = raw_text
@@ -32,7 +31,7 @@ class StrategyBenchmarkRunner:
             k_facts = tc.get("key_facts", [])
 
             # Execute query
-            res = engine.query(q, use_cache=False)
+            res = engine.query(q)
             records.append(res)
 
             # Evaluate RAGAS quality
@@ -47,8 +46,7 @@ class StrategyBenchmarkRunner:
             quality_results.append(q_res)
 
         q_summary = self.quality_eval.summarize(quality_results)
-        cache_stats = engine.semantic_cache.get_stats()
-        p_summary = self.perf_eval.evaluate(records, cache_stats)
+        p_summary = self.perf_eval.evaluate(records)
 
         # Calculate composite score 0-100
         score = (
@@ -135,7 +133,7 @@ class StrategyBenchmarkRunner:
         if best_strategy["performance"]["avg_latency_ms"] < 100.0:
             working.append(f"Fast Latency: Sub-100ms retrieval and response ({best_strategy['performance']['avg_latency_ms']}ms).")
         else:
-            improving.append("Latency can be reduced further by deploying semantic caching.")
+            improving.append("Latency can be reduced further with smaller top-k or optimized chunk overlaps.")
 
         improving.append("Fine chunking (256 chars) yields higher precision, whereas 512 chars captures broader context.")
 

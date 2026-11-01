@@ -6,7 +6,6 @@ from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 
 from app.data.sample_docs import SAMPLE_KNOWLEDGE_BASE
-from app.core.semantic_cache import SemanticCache
 from app.core.llm_security_guard import LLMSecurityGuard
 
 class BM25Retriever:
@@ -112,7 +111,6 @@ class RAGEngine:
     - Dense Vector Search (Cosine Similarity)
     - BM25 Lexical Keyword Search
     - Hybrid Search (Reciprocal Rank Fusion)
-    - Semantic Caching
     - Guardrail Filtering (Direct & Indirect Prompt Injections)
     """
     def __init__(
@@ -121,20 +119,16 @@ class RAGEngine:
         chunk_overlap: int = 64,
         search_type: str = "hybrid",
         top_k: int = 4,
-        enable_cache: bool = True,
-        cache_threshold: float = 0.88,
         enable_guardrails: bool = True
     ):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.search_type = search_type
         self.top_k = top_k
-        self.enable_cache = enable_cache
         self.enable_guardrails = enable_guardrails
 
         self.vectorizer = DenseVectorizer(dim=128)
         self.bm25 = BM25Retriever()
-        self.semantic_cache = SemanticCache(default_threshold=cache_threshold)
 
         self.chunks: List[Dict[str, Any]] = []
         self.chunk_embeddings: List[np.ndarray] = []
@@ -278,29 +272,15 @@ class RAGEngine:
         self,
         query: str,
         search_type: Optional[str] = None,
-        top_k: Optional[int] = None,
-        use_cache: Optional[bool] = None
+        top_k: Optional[int] = None
     ) -> Dict[str, Any]:
-        """Execute end-to-end RAG query with telemetry and caching."""
+        """Execute end-to-end RAG query with retrieval, security, and generation."""
         start_total = time.perf_counter()
-        use_caching = self.enable_cache if use_cache is None else use_cache
-        query_emb = self.vectorizer.encode(query)
 
-        # 1. Check Semantic Cache
-        if use_caching:
-            cached_resp, match_type, sim_score = self.semantic_cache.get(query, query_emb)
-            if cached_resp is not None:
-                cached_resp_copy = dict(cached_resp)
-                cached_resp_copy["cache_hit"] = True
-                cached_resp_copy["cache_match_type"] = match_type
-                cached_resp_copy["cache_similarity"] = round(sim_score, 3)
-                cached_resp_copy["total_latency_ms"] = round((time.perf_counter() - start_total) * 1000.0, 2)
-                return cached_resp_copy
-
-        # 2. Retrieval
+        # 1. Retrieval
         contexts, retrieval_ms = self.retrieve(query, search_type=search_type, top_k=top_k)
 
-        # 3. Security Guardrails
+        # 2. Security Guardrails
         if self.enable_guardrails:
             guardrail_violation = self._check_guardrails(query, contexts)
             if guardrail_violation:
@@ -315,12 +295,11 @@ class RAGEngine:
                     "prompt_tokens": len(query.split()) * 2,
                     "completion_tokens": len(guardrail_violation.split()) * 2,
                     "total_tokens": (len(query.split()) + len(guardrail_violation.split())) * 2,
-                    "cache_hit": False,
                     "security_blocked": True,
                     "security_reason": guardrail_violation
                 }
 
-        # 4. Generation
+        # 3. Generation
         gen_start = time.perf_counter()
         answer = self._generate_answer(query, contexts)
         generation_ms = (time.perf_counter() - gen_start) * 1000.0
@@ -332,7 +311,7 @@ class RAGEngine:
         completion_tokens = int(len(answer) / 3.8)
         total_tokens = prompt_tokens + completion_tokens
 
-        response_payload = {
+        return {
             "query": query,
             "answer": answer,
             "contexts": [c["content"] for c in contexts],
@@ -343,18 +322,5 @@ class RAGEngine:
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
             "total_tokens": total_tokens,
-            "cache_hit": False,
             "security_blocked": False
         }
-
-        # Store in cache if enabled
-        if use_caching:
-            self.semantic_cache.set(
-                query=query,
-                query_embedding=query_emb,
-                response=response_payload,
-                original_latency_ms=total_ms,
-                tokens=total_tokens
-            )
-
-        return response_payload

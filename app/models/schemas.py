@@ -10,8 +10,6 @@ class PipelineConfig(BaseModel):
     chunk_size: int = Field(default=512, description="Chunk size in characters")
     chunk_overlap: int = Field(default=64, description="Chunk overlap in characters")
     top_k: int = Field(default=4, description="Number of retrieved chunks")
-    semantic_cache_enabled: bool = Field(default=True, description="Enable semantic caching")
-    cache_similarity_threshold: float = Field(default=0.88, description="Cosine similarity threshold for cache hit")
     security_guardrails_enabled: bool = Field(default=True, description="Enable input & document guardrails")
     llm_model: str = Field(default="gpt-4o", description="LLM used for generation / cost calculation")
 
@@ -76,9 +74,6 @@ class PerformanceSummary(BaseModel):
     total_tokens_consumed: int
     estimated_cost_usd: float
     estimated_cost_per_1k_queries: float
-    semantic_cache_hit_rate_pct: float
-    cache_hits: int
-    cache_misses: int
     latency_breakdown: Dict[str, float] = Field(default_factory=dict)
 
 # --- Security Metric Schemas ---

@@ -56,7 +56,6 @@ class QueryRequest(BaseModel):
     query: str
     search_type: Optional[str] = "hybrid"
     top_k: Optional[int] = 4
-    use_cache: Optional[bool] = True
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_dashboard():
@@ -75,8 +74,7 @@ async def health_check():
         "status": "healthy",
         "service": "RAGLens",
         "version": "1.0.0",
-        "indexed_chunks": len(default_rag_engine.chunks),
-        "cache_stats": default_rag_engine.semantic_cache.get_stats()
+        "indexed_chunks": len(default_rag_engine.chunks)
     }
 
 @app.get("/api/sample-data")
@@ -93,9 +91,9 @@ async def run_evaluation(request: RunEvaluationRequest):
     """
     Execute full evaluation suite:
     1. RAG Quality (Faithfulness, Relevancy, Precision, Recall)
-    2. Performance (Latency, Token consumption, Semantic cache hit rate, Cost per query)
+    2. Performance (Latency, Token consumption, Cost per query)
     3. Security (Prompt injection, System instruction overrides, Poisoned docs)
-    4. Benchmarking (Vector vs Hybrid, Chunk sizes, Top-K, Caching)
+    4. Benchmarking (Vector vs Hybrid, Chunk sizes, Top-K)
     """
     try:
         report = await eval_runner.execute_evaluation(request)
@@ -109,7 +107,7 @@ async def analyze_single_query(request: QueryRequest):
     Executes a query and instantly evaluates:
     1. AI-as-a-Judge Security Guardrail (LLM detects prompt injections, overrides, leaks with any terminology)
     2. RAG Quality (Faithfulness, Relevancy, Precision, Recall)
-    3. Performance (Response Latency, Retrieval Latency, Tokens, Cost, Cache)
+    3. Performance (Response Latency, Retrieval Latency, Tokens, Cost)
     4. What is working, failing, and needs improvement
     """
     import time
@@ -144,9 +142,7 @@ async def analyze_single_query(request: QueryRequest):
                     "prompt_tokens": int(len(request.query) / 4),
                     "completion_tokens": 20,
                     "total_tokens": int(len(request.query) / 4) + 20,
-                    "cost_usd": 0.0,
-                    "cache_hit": False,
-                    "cache_match_type": "miss"
+                    "cost_usd": 0.0
                 },
                 "security": {
                     "is_safe": True,
@@ -168,8 +164,7 @@ async def analyze_single_query(request: QueryRequest):
         rag_res = default_rag_engine.query(
             query=request.query,
             search_type=request.search_type or "hybrid",
-            top_k=request.top_k or 4,
-            use_cache=request.use_cache if request.use_cache is not None else True
+            top_k=request.top_k or 4
         )
         total_ms = (time.perf_counter() - t0) * 1000.0
 
@@ -211,11 +206,6 @@ async def analyze_single_query(request: QueryRequest):
         else:
             failing.append(f"Answer Relevancy is low ({int(relevancy*100)}%): The response is off-topic or fails to answer what was asked.")
 
-        if rag_res.get("cache_hit"):
-            working.append(f"Semantic Cache Hit ({rag_res.get('cache_match_type')} match): Instant response served in {rag_res.get('total_latency_ms', 0)}ms with $0 token cost.")
-        else:
-            improving.append("Cache Miss: Query was freshly computed and is now stored in semantic cache for instant future lookups.")
-
         working.append("Security Safe: Input cleared LLM security guardrails with no injection attempts.")
 
         return {
@@ -242,9 +232,7 @@ async def analyze_single_query(request: QueryRequest):
                 "prompt_tokens": prompt_tokens,
                 "completion_tokens": completion_tokens,
                 "total_tokens": total_tokens,
-                "cost_usd": round(cost_est, 6),
-                "cache_hit": rag_res.get("cache_hit", False),
-                "cache_match_type": rag_res.get("cache_match_type", "miss")
+                "cost_usd": round(cost_est, 6)
             },
             "security": {
                 "is_safe": True,
@@ -282,9 +270,7 @@ async def analyze_single_query(request: QueryRequest):
                 "prompt_tokens": prompt_tokens,
                 "completion_tokens": completion_tokens,
                 "total_tokens": total_tokens,
-                "cost_usd": round(cost_est, 6),
-                "cache_hit": rag_res.get("cache_hit", False),
-                "cache_match_type": rag_res.get("cache_match_type", "miss")
+                "cost_usd": round(cost_est, 6)
             },
             "security": {
                 "is_safe": sec_audit.passed,
@@ -305,8 +291,7 @@ async def run_query(request: QueryRequest):
         result = default_rag_engine.query(
             query=request.query,
             search_type=request.search_type,
-            top_k=request.top_k,
-            use_cache=request.use_cache
+            top_k=request.top_k
         )
         return result
     except Exception as e:
@@ -332,13 +317,6 @@ async def upload_document(doc: DocUploadRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Document indexing failed: {str(e)}")
-
-@app.post("/api/cache/clear")
-async def clear_cache():
-    """Purge the semantic cache."""
-    default_rag_engine.semantic_cache.clear()
-    return {"status": "success", "message": "Semantic cache flushed."}
-
 
 # --- RESUME / DOCUMENT EVALUATION & BENCHMARKING (rageval.dev workflow) ---
 

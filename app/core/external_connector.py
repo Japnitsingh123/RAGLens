@@ -71,6 +71,5 @@ class ExternalRAGConnector:
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
             "total_tokens": prompt_tokens + completion_tokens,
-            "cache_hit": False,
             "security_blocked": False
         }

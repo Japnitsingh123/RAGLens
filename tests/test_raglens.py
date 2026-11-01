@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.core.rag_engine import RAGEngine
-from app.core.semantic_cache import SemanticCache
 from app.core.quality_eval import QualityEvaluator
 from app.core.performance_eval import PerformanceEvaluator
 from app.core.security_eval import SecurityEvaluator
@@ -43,25 +42,6 @@ def test_rag_engine_retrieval_and_query():
     assert len(res["contexts"]) > 0
     assert "15 minutes" in res["answer"]
     assert res["total_latency_ms"] > 0
-
-def test_semantic_cache_exact_and_semantic_hit():
-    cache = SemanticCache(default_threshold=0.85)
-    import numpy as np
-    v1 = np.array([1.0, 0.0, 0.0], dtype=np.float32)
-    v2 = np.array([0.98, 0.1, 0.0], dtype=np.float32)
-
-    cache.set("What is OAuth?", v1, {"answer": "Authentication framework"})
-
-    # Exact lookup
-    resp1, m1, s1 = cache.get("What is OAuth?", v1)
-    assert m1 == "exact"
-    assert resp1["answer"] == "Authentication framework"
-
-    # Semantic lookup
-    resp2, m2, s2 = cache.get("Explain OAuth authentication", v2)
-    assert m2 == "semantic"
-    assert s2 >= 0.85
-    assert resp2["answer"] == "Authentication framework"
 
 def test_quality_evaluator_metrics():
     evaluator = QualityEvaluator()
@@ -105,13 +85,12 @@ def test_security_evaluator_defense():
 def test_benchmarking_engine():
     bench = BenchmarkEngine()
     summary = bench.run_all_benchmarks()
-    assert len(summary.groups) == 4
-    # Check that search mode, chunk sizes, top-k, and caching benchmarks ran
+    assert len(summary.groups) == 3
+    # Check that search mode, chunk sizes, and top-k benchmarks ran
     types = [g.benchmark_type for g in summary.groups]
     assert "search_mode" in types
     assert "chunk_size" in types
     assert "top_k" in types
-    assert "caching" in types
 
 def test_full_evaluation_api():
     payload = {
@@ -120,7 +99,6 @@ def test_full_evaluation_api():
             "search_type": "hybrid",
             "chunk_size": 512,
             "top_k": 3,
-            "semantic_cache_enabled": True,
             "security_guardrails_enabled": True
         },
         "suites": ["quality", "performance", "security", "benchmarking"]
@@ -134,7 +112,7 @@ def test_full_evaluation_api():
     assert report["quality"]["avg_faithfulness"] > 0.7
     assert report["performance"]["avg_response_latency_ms"] > 0
     assert report["security"]["passed_tests"] > 0
-    assert len(report["benchmarking"]["groups"]) == 4
+    assert len(report["benchmarking"]["groups"]) == 3
 
 def test_interactive_query_api():
     payload = {

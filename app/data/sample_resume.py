@@ -15,14 +15,14 @@ TECHNICAL SKILLS
 - Frameworks & Libraries: FastAPI, PyTorch, LangChain, LlamaIndex, Transformers, HuggingFace
 - Data & Vector Stores: PostgreSQL, Redis, Pinecone, ChromaDB, Qdrant, Milvus
 - Cloud & DevOps: AWS (EKS, Lambda, S3, RDS), Docker, Kubernetes, Terraform, Prometheus
-- Concepts: Retrieval-Augmented Generation (RAG), Semantic Caching, BM25 Hybrid Search, Cross-Encoder Reranking
+- Concepts: Retrieval-Augmented Generation (RAG), Contextual Query Rewriting, BM25 Hybrid Search, Cross-Encoder Reranking
 
 WORK EXPERIENCE
 
 Lead AI Engineer | SynthAI Systems | San Francisco, CA | 2022 - Present
 - Architected and deployed an enterprise Multi-Tenant RAG platform handling 15,000+ internal technical documentation queries daily.
 - Built a hybrid retrieval pipeline combining Dense Vector embeddings (OpenAI text-embedding-3-small) and BM25 lexical search with Reciprocal Rank Fusion, improving Context Recall from 71% to 92%.
-- Engineered an in-memory Semantic Cache layer using cosine similarity matching in Redis, cutting repeat query latency from 850ms to 12ms and saving $14,000/month in OpenAI API token expenditures.
+- Engineered a contextual query reformulation and dynamic reranking layer with cross-encoders, cutting irrelevant retrieval by 65% and saving token expenditures.
 - Implemented automated prompt injection defenses and document sanitization guardrails, neutralizing 99.8% of adversarial jailbreak attempts.
 - Led a team of 5 engineers across sprint planning, technical design reviews, and automated CI/CD deployment pipelines.
 

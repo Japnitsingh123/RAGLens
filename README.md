@@ -8,9 +8,9 @@
 
 **RAGLens** is an end-to-end testing platform designed for developers building RAG systems. It connects to your RAG pipeline (or runs a built-in enterprise documentation pipeline) and systematically tests:
 1. **RAG Quality (RAGAS Methodology)**: Faithfulness, Answer Relevancy, Context Precision, and Context Recall.
-2. **Performance & Latency**: End-to-end response time, retrieval vs. generation latency, token breakdown, semantic cache hit rate, and query cost estimation.
+2. **Performance & Latency**: End-to-end response time, retrieval vs. generation latency, token breakdown, and query cost estimation.
 3. **Security Red-Teaming**: Prompt injection resistance, system instruction override defenses, and poisoned document detection.
-4. **Benchmarking Lab**: Empirical A/B testing comparing Vector Search vs. Hybrid Search (BM25 + Dense RRF), Chunk Sizes (256 vs 512 vs 1024), Top-K values (2 vs 4 vs 8), and Cold vs Warm Semantic Caching.
+4. **Benchmarking Lab**: Empirical A/B testing comparing Vector Search vs. Hybrid Search (BM25 + Dense RRF), Chunk Sizes (256 vs 512 vs 1024), and Top-K values (2 vs 4 vs 8).
 
 ---
 
@@ -29,7 +29,7 @@
       │ • Faithfulness      │        │ • Response Latency  │        │ • Prompt Injection  │
       │ • Answer Relevancy  │        │ • Retrieval Latency │        │ • System Overrides  │
       │ • Context Precision │        │ • Token Consumption │        │ • Poisoned Chunks   │
-      │ • Context Recall    │        │ • Semantic Cache    │        │ • Credential Leaks  │
+      │ • Context Recall    │        │ • System Latency    │        │ • Credential Leaks  │
       └─────────────────────┘        │ • Cost / 1k Queries │        └─────────────────────┘
                                      └─────────────────────┘
                                                 │
@@ -40,7 +40,7 @@
                                      │ • Vector vs. Hybrid │
                                      │ • Chunk Size Tuning │
                                      │ • Top-K Exploration │
-                                     │ • Cold vs. Warm     │
+                                     │ • Multi-Strategy    │
                                      └─────────────────────┘
 ```
 
@@ -111,16 +111,14 @@ All 9 test suites verify unit algorithms, RAGAS calculations, adversarial red-te
 - **Response Latency**: End-to-end execution timer (ms).
 - **Retrieval Latency**: Vector / BM25 index query time.
 - **Token Tracking**: Prompt, completion, and total tokens.
-- **Semantic Caching**: Cosine similarity match ($\ge 0.88$) with hit/miss tracking and latency saved.
 - **Cost Calculation**: Configurable for GPT-4o, Claude 3.5 Sonnet, Gemini 1.5 Pro, and Llama 3 ($/1k queries).
 
 ### 3. Security Testing (Red-Teaming)
 - **Direct Prompt Injections**: Adversarial probes attempting to bypass system directives.
-- **System Instruction Overrides**: Jailbreak personas ("DAN"), delimiter escaping, and developer mode spoofing.
+- **System Instruction Overrides**: Adversarial jailbreak personas, delimiter escaping, and developer mode spoofing.
 - **Indirect Document Poisoning**: Evaluates whether malicious instructions planted inside knowledge documents are safely mitigated.
 
 ### 4. Benchmarking Lab
 - **Vector Search vs. Hybrid Search**: Evaluates BM25 + Dense Reciprocal Rank Fusion ($RRF$) against pure dense vectors.
 - **Chunk Size Tuning**: Evaluates 256 vs 512 vs 1024 character chunks.
 - **Top-K Tuning**: Balances context recall vs. token costs across $k \in \{2, 4, 8\}$.
-- **Caching Speedup**: Measures Cold execution vs. Sub-millisecond Warm semantic cache hits.

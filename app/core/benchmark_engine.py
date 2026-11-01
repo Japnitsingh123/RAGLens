@@ -13,7 +13,6 @@ class BenchmarkEngine:
     1. Vector Search vs Hybrid Search
     2. Chunk Sizes (256 vs 512 vs 1024)
     3. Top-K Values (2 vs 4 vs 8)
-    4. Before vs After Semantic Caching
     """
     def __init__(self):
         self.quality_eval = QualityEvaluator()
@@ -31,14 +30,11 @@ class BenchmarkEngine:
         # 3. Top-K Retrieval Benchmark: K=2 vs K=4 vs K=8
         groups.append(self._benchmark_top_k())
 
-        # 4. Caching Benchmark: Cold vs Warm Cache
-        groups.append(self._benchmark_caching())
-
         return BenchmarkSummary(groups=groups)
 
     def _benchmark_search_mode(self) -> BenchmarkGroupResult:
-        rag_vector = RAGEngine(search_type="vector", top_k=4, enable_cache=False, enable_guardrails=False)
-        rag_hybrid = RAGEngine(search_type="hybrid", top_k=4, enable_cache=False, enable_guardrails=False)
+        rag_vector = RAGEngine(search_type="vector", top_k=4, enable_guardrails=False)
+        rag_hybrid = RAGEngine(search_type="hybrid", top_k=4, enable_guardrails=False)
 
         # Benchmark on standard QA pairs
         v_latencies, v_precisions, v_recalls, v_tokens = [], [], [], []
@@ -122,7 +118,7 @@ class BenchmarkEngine:
         for cfg in chunk_configs:
             size = cfg["size"]
             label = cfg["label"]
-            engine = RAGEngine(chunk_size=size, chunk_overlap=32, top_k=3, enable_cache=False, enable_guardrails=False)
+            engine = RAGEngine(chunk_size=size, chunk_overlap=32, top_k=3, enable_guardrails=False)
             
             latencies, precisions, recalls, tokens = [], [], [], []
             for item in DEFAULT_QUALITY_TESTS[:4]:
@@ -163,7 +159,7 @@ class BenchmarkEngine:
         top_k_values = [2, 4, 8]
         variants = []
 
-        engine = RAGEngine(chunk_size=512, top_k=4, enable_cache=False, enable_guardrails=False)
+        engine = RAGEngine(chunk_size=512, top_k=4, enable_guardrails=False)
 
         for k in top_k_values:
             latencies, precisions, recalls, tokens = [], [], [], []
@@ -199,56 +195,4 @@ class BenchmarkEngine:
             winner="Top-K = 4",
             recommendation="Top-K = 4 maximizes recall while avoiding context window pollution and keeping LLM token costs under $0.003/query.",
             variants=variants
-        )
-
-    def _benchmark_caching(self) -> BenchmarkGroupResult:
-        engine = RAGEngine(enable_cache=True, cache_threshold=0.88, enable_guardrails=False)
-        engine.semantic_cache.clear()
-
-        query = "What is the token lifetime for OAuth access tokens and refresh tokens?"
-
-        # 1. Cold query (No Cache)
-        t0 = time.perf_counter()
-        res_cold = engine.query(query, use_cache=True)
-        cold_latency = (time.perf_counter() - t0) * 1000.0
-
-        # 2. Warm query (Exact or high semantic similarity)
-        similar_query = "What is the token expiration for OAuth access tokens and refresh tokens?"
-        t1 = time.perf_counter()
-        res_warm = engine.query(similar_query, use_cache=True)
-        warm_latency = (time.perf_counter() - t1) * 1000.0
-
-        cost_cold = self.perf_eval.calculate_cost(res_cold["prompt_tokens"], res_cold["completion_tokens"])
-        cost_warm = 0.0  # Zero LLM token cost on semantic cache hit
-
-        item_cold = BenchmarkComparisonItem(
-            configuration_name="Cold Query (No Cache)",
-            variant="cold",
-            retrieval_latency_ms=round(res_cold["retrieval_latency_ms"], 2),
-            context_precision=1.0,
-            context_recall=1.0,
-            token_usage=res_cold["total_tokens"],
-            cost_per_query=round(cost_cold, 6),
-            description="Full retrieval and answer synthesis execution."
-        )
-
-        speedup_pct = round(((cold_latency - warm_latency) / max(cold_latency, 0.001)) * 100.0, 1)
-
-        item_warm = BenchmarkComparisonItem(
-            configuration_name=f"Warm Query (Semantic Cache Hit - {speedup_pct}% faster)",
-            variant="warm",
-            retrieval_latency_ms=0.05,
-            context_precision=1.0,
-            context_recall=1.0,
-            token_usage=0,
-            cost_per_query=0.0,
-            description="Instant retrieval from in-memory semantic vector cache."
-        )
-
-        return BenchmarkGroupResult(
-            benchmark_type="caching",
-            title="Semantic Caching Impact (Cold vs. Warm)",
-            winner="Warm Cache",
-            recommendation=f"Semantic caching eliminates LLM API generation costs and reduces end-to-end latency by {speedup_pct}%.",
-            variants=[item_cold, item_warm]
         )

@@ -1,17 +1,19 @@
 <div align="center">
 
 # ⚡ RAGLens
-### Production RAG Evaluation & Benchmarking Platform
+### Production RAG Evaluation, Benchmarking & Failure Attribution Platform
 
 [![Live Demo](https://img.shields.io/badge/Demo-raglens.vercel.app-6366F1?style=for-the-badge&logo=vercel&logoColor=white)](https://raglens.vercel.app)
 [![GitHub Repo](https://img.shields.io/badge/GitHub-Japnitsingh123%2FRAGLens-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Japnitsingh123/RAGLens)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![ChromaDB](https://img.shields.io/badge/Vector_DB-ChromaDB-FF6600?style=for-the-badge&logo=databricks&logoColor=white)](https://www.trychroma.com)
+[![Embeddings](https://img.shields.io/badge/Embeddings-BAAI%2Fbge--small--en--v1.5-blue?style=for-the-badge&logo=huggingface&logoColor=white)](https://huggingface.co/BAAI/bge-small-en-v1.5)
+[![Reranker](https://img.shields.io/badge/Reranker-ms--marco--MiniLM--L--6--v2-orange?style=for-the-badge&logo=huggingface&logoColor=white)](https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2)
+[![Vector DB](https://img.shields.io/badge/Vector_DB-ChromaDB-FF6600?style=for-the-badge&logo=databricks&logoColor=white)](https://www.trychroma.com)
 [![LangGraph](https://img.shields.io/badge/Orchestrator-LangGraph_Parallel-FF4F00?style=for-the-badge)](https://langchain-ai.github.io/langgraph/)
+[![Ragas](https://img.shields.io/badge/Evaluation-Ragas_4--Metric_Engine-10B981?style=for-the-badge)](https://docs.ragas.io/)
 
 <p align="center">
-  <b>Upload any document, ingest into ChromaDB, and auto-synthesize benchmark questions to evaluate 5 RAG architectures concurrently via LangGraph & Ragas failure attribution.</b>
+  <b>Upload any document, index with BGE-small-en-1.5 into ChromaDB, synthesize benchmark questions with Gemini, and evaluate 5 RAG architectures concurrently via LangGraph & Ragas 4-metric failure attribution.</b>
 </p>
 
 [**🚀 Open Live Web App**](https://raglens.vercel.app) • [**📚 Interactive API Docs**](http://localhost:8000/docs) • [**⚡ Quickstart**](#-quickstart-in-3-steps)
@@ -22,29 +24,32 @@
 
 ## 📌 Executive Summary
 
-> - **Built a RAG Evaluation Platform** (Next.js 14 aesthetic, FastAPI, ChromaDB) benchmarking 5 strategies—**Naive, Hybrid BM25, Cohere Rerank, HyDE, and Parent-Child**—in parallel via **LangGraph**.
-> - **Custom Document Ingestion & Synthetic Testsets:** Ingests user-uploaded documents (PDF, TXT, MD) into ChromaDB (parent-child chunks) and automatically synthesizes evaluation questions covering exact acronyms, nuanced passages, context depth, and conceptual queries.
-> - **Implemented an LLM-as-a-Judge & failure attribution engine** scoring **Faithfulness, Correctness, and Completeness** using **Ragas**, diagnosing root causes (*context limits, embedding weakness, hallucinations*).
+> - **Production RAG Benchmarking Platform:** Benchmarks 5 production retrieval architectures—**Naive Dense, Hybrid BM25, Neural Cross-Encoder Rerank, HyDE, and Parent-Child Expansion**—in parallel via **LangGraph**.
+> - **BAAI/bge-small-en-v1.5 Embeddings:** 384-dimensional dense vectors with high retrieval precision and fast batch ingestion (`batch_size=32`) into ChromaDB.
+> - **Neural Cross-Encoder Reranking:** Powered by `cross-encoder/ms-marco-MiniLM-L-6-v2` for deep query-passage joint attention, replacing heuristic formulas (with optional Cohere Rerank API support).
+> - **Automated Testset Synthesis:** Generates nuanced evaluation questions and ground-truth references directly from uploaded documents using **Gemini 2.5 Flash**.
+> - **Ragas 4 Canonical Metrics & Failure Attribution:** Evaluates **Faithfulness**, **Answer Relevancy**, **Context Precision**, and **Context Recall** plus **Harmonic Ragas Score**, automatically attributing failure root causes (*Context Limits, Embedding Weakness, Hallucination*).
 
 ---
 
-## 🧭 Interactive Architecture
+## 🧭 System Architecture
 
 ```mermaid
 flowchart TD
     DOC["User Uploads Document\n(PDF, TXT, MD)"] --> CHUNK["Parent-Child Chunking\n(500t Parent & 100t Child)"]
-    CHUNK --> CHROMA[("ChromaDB Vector Store\nHNSW Index + Metadatas")]
-    CHUNK --> LLM_GEN["LLM Testset Synthesis\n(Generates 4 Evaluator Questions + Ground Truth)"]
+    CHUNK --> BGE["BAAI/bge-small-en-v1.5\n(384-dim Dense Embeddings)"]
+    BGE --> CHROMA[("ChromaDB Vector Store\nHNSW Index + Metadatas")]
+    CHUNK --> GEMINI["Gemini 2.5 Flash\n(Auto-synthesizes 4 Benchmark Questions + Ground Truth)"]
     
-    LLM_GEN --> Q["Select Benchmark Question"]
+    GEMINI --> Q["Select Benchmark Question"]
     Q --> START(["LangGraph START"])
     
     subgraph ParallelFanout ["LangGraph Concurrent 5-Node Fanout"]
-        START --> N1["1. Naive Dense RAG\n(ChromaDB Cosine)"]
-        START --> N2["2. Hybrid BM25 RAG\n(ChromaDB + BM25 RRF)"]
-        START --> N3["3. Cohere Rerank\n(Cross-Encoder Attention)"]
+        START --> N1["1. Naive Dense RAG\n(BGE-small-en-1.5 Cosine)"]
+        START --> N2["2. Hybrid BM25 RAG\n(BGE Dense + BM25 Lexical RRF)"]
+        START --> N3["3. Neural Cross-Encoder Rerank\n(ms-marco-MiniLM-L-6-v2)"]
         START --> N4["4. HyDE RAG\n(Hypothetical Doc Embedding)"]
-        START --> N5["5. Parent-Child RAG\n(100t Child -> 500t Parent)"]
+        START --> N5["5. Parent-Child RAG\n(100t Child -> 500t Parent Expansion)"]
     end
 
     N1 --> AGG["Aggregation Node"]
@@ -54,85 +59,90 @@ flowchart TD
     N5 --> AGG
 
     subgraph EvaluationAttribution ["Ragas Evaluation & Root Cause Attribution"]
-        AGG --> RAGAS["Ragas LLM-as-a-Judge\n• Faithfulness\n• Correctness\n• Completeness"]
+        AGG --> RAGAS["Ragas 4-Metric Engine (Async Parallel)\n• Faithfulness\n• Answer Relevancy\n• Context Precision (mAP@K)\n• Context Recall"]
         RAGAS --> DIAG["Failure Attribution Engine\n• Context Limits\n• Embedding Weakness\n• Hallucination"]
     end
 
-    DIAG --> END(["Interactive Dashboard & Telemetry Output"])
+    DIAG --> END(["Production Telemetry & Interactive Dashboard"])
 ```
 
 ---
 
 ## 🔬 The 5 Benchmarked Strategies
 
-Click on any strategy below to view how it works in ChromaDB, its formulation, and failure mode:
+Click on any strategy below to view how it operates, its underlying models, and diagnostic trade-offs:
 
 <details open>
 <summary><b>1. Naive Dense RAG (Baseline)</b></summary>
 <br>
 
-- **How it works:** Directly embeds the user query into a 768-dim vector and computes cosine similarity against chunk embeddings in ChromaDB.
-- **Trade-off:** Fast and simple, but vulnerable to **context limits** (boundary cutoff) and **embedding weakness** (acronym / exact number mismatch).
+- **Vector Embedding:** `BAAI/bge-small-en-v1.5` (384-dim).
+- **How it works:** Encodes user query and retrieves top-$k$ nearest neighbors by cosine similarity in ChromaDB.
+- **Trade-off:** Fast and simple baseline, but susceptible to **Context Limits** (boundary cutoffs) and **Embedding Weakness** (dense vector dilution on specific acronyms/version numbers).
 </details>
 
 <details>
 <summary><b>2. Hybrid BM25 RAG (Solves Embedding Weakness)</b></summary>
 <br>
 
-- **How it works:** Fuses dense ChromaDB vector search with sparse BM25 lexical ranking using **Reciprocal Rank Fusion (RRF)**:
+- **How it works:** Combines dense ChromaDB vector search with sparse BM25 tokenized lexical matching via **Reciprocal Rank Fusion (RRF)**:
   $$\text{RRF Score} = \frac{1}{60 + \text{Rank}_{\text{dense}}} + \frac{1}{60 + \text{Rank}_{\text{bm25}}}$$
 - **Best for:** Queries containing specific product codes, ciphers, and acronyms (e.g., `AES-256-GCM`, `FIPS 140-3`, `TLS 1.3`).
 </details>
 
 <details>
-<summary><b>3. Cohere Cross-Encoder Rerank (Deep Semantic Scoring)</b></summary>
+<summary><b>3. Neural Cross-Encoder Rerank (Deep Semantic Relevance)</b></summary>
 <br>
 
-- **How it works:** Fetches a wider candidate pool ($2 \times \text{top\_k}$) from ChromaDB, then evaluates full cross-attention interaction between the query and each passage.
-- **Best for:** Nuanced technical questions where high-level cosine similarity alone retrieves semantically adjacent but non-answering passages.
+- **Reranker Model:** `cross-encoder/ms-marco-MiniLM-L-6-v2` (or Cohere Rerank API when `COHERE_API_KEY` is provided).
+- **How it works:** Retrieves an expanded candidate pool ($2 \times \text{top\_k}$) from ChromaDB, then feeds `(query, passage)` pairs through the neural Cross-Encoder model to score deep contextual cross-attention:
+  $$\text{Score} = \sigma(\text{logit})$$
+- **Best for:** Nuanced technical questions where high-level cosine similarity retrieves semantically adjacent but non-answering passages.
 </details>
 
 <details>
 <summary><b>4. HyDE — Hypothetical Document Embeddings (Solves Query Asymmetry)</b></summary>
 <br>
 
-- **How it works:** Uses a zero-shot LLM step to draft a hypothetical ideal answer first, then embeds that hypothetical document to search ChromaDB chunks.
-- **Best for:** Exploratory, conceptual, or asymmetric questions where the question vocabulary differs sharply from authoritative documentation.
+- **How it works:** Generates a hypothetical reference answer using an LLM first, embeds the generated answer with `BAAI/bge-small-en-v1.5`, and searches ChromaDB for neighboring chunks in document-space rather than query-space.
+- **Best for:** Exploratory, conceptual, or brief queries where the user's phrasing differs significantly from documentation terminology.
 </details>
 
 <details>
 <summary><b>5. Parent-Child Chunk Expansion (Solves Context Limits)</b></summary>
 <br>
 
-- **How it works:** Embeds small child chunks (100 tokens) for high retrieval precision in ChromaDB, then resolves the metadata `parent_id` to pass the full enclosing parent document (500 tokens) to the generator.
-- **Best for:** Complex architectural questions where isolated chunks truncate crucial neighboring sentences.
+- **How it works:** Indexes granular 100-token child chunks for high-precision retrieval in ChromaDB, then resolves metadata `parent_id` to expand into the full enclosing 500-token parent document before sending to the LLM generator.
+- **Best for:** Architectural questions where isolated chunks truncate critical prerequisite or follow-up details.
 </details>
 
 ---
 
-## 🎯 Ragas LLM-as-a-Judge & Failure Attribution
+## 🎯 Ragas 4-Metric LLM-as-a-Judge & Failure Attribution
 
-RAGLens implements the formal **Ragas** metric formulations alongside automated root-cause diagnostics:
+RAGLens implements the 4 standard **Ragas** metrics combined with automated root-cause diagnostics:
 
-### 1. Ragas Metrics
-| Metric | Formulation | What It Measures |
+### 1. The 4 Ragas Evaluation Metrics
+| Metric | Formulation / Logic | What It Measures |
 |---|---|---|
-| **Faithfulness** | $\frac{\text{Supported Claims in Answer}}{\text{Total Claims in Answer}}$ | Hallucination prevention: Ensures output is strictly grounded in retrieved passages. |
-| **Answer Correctness** | F1 harmonic mean of factual precision & recall vs Ground Truth | Factual accuracy against reference answers. |
-| **Answer Completeness** | Facet coverage ratio scaled by answer depth | Ensures all sub-questions in the query are addressed. |
+| **Faithfulness** | $\frac{|\text{Supported Claims in Answer}|}{|\text{Total Claims in Answer}|}$ | **Groundedness / Hallucination Prevention:** Evaluates whether statements in the generated response are factually supported by retrieved context. |
+| **Answer Relevancy** | $\cos(\mathbf{e}_{\text{query}}, \mathbf{e}_{\text{answer}})$ via BGE-small-en | **Query Alignment:** Penalizes verbose, evasive, or off-topic responses that don't address the user prompt. |
+| **Context Precision** | $\text{mAP@K} = \frac{1}{|\text{rel}|} \sum_{k=1}^K \text{Prec}@k \times \text{rel}(k)$ | **Signal-to-Noise Ratio:** Measures whether relevant context chunks are ranked higher in the retrieved top-$k$ list. |
+| **Context Recall** | $\frac{|\text{Ground Truth Claims in Context}|}{|\text{Total Ground Truth Claims}|}$ | **Retrieval Completeness:** Measures whether the retrieved context passages contain all necessary facts to answer the question. |
+| **Ragas Score** | $\text{Harmonic Mean}(\text{Faithfulness}, \text{Relevancy}, \text{Precision}, \text{Recall})$ | **Overall Benchmark Score:** Unified measure of end-to-end RAG pipeline quality. |
 
-### 2. Failure Attribution Diagnostics
+### 2. Failure Attribution Engine
 <details>
-<summary><b>🔍 How Failure Attribution Works (Click to Expand)</b></summary>
+<summary><b>🔍 How Failure Diagnostics Work (Click to Expand)</b></summary>
 <br>
 
-When a strategy scores below thresholds, RAGLens automatically categorizes the root cause:
-- **`Context Limits`**: Detected when retrieved chunks truncate context boundaries or miss neighboring clauses.  
-  *Engineering Fix:* Upgrade to Parent-Child expansion or increase chunk size to 500+ tokens.
-- **`Embedding Weakness`**: Detected when dense cosine similarity dilutes specific technical acronyms or numbers.  
-  *Engineering Fix:* Enable Hybrid BM25 with Reciprocal Rank Fusion.
-- **`Hallucination`**: Detected when Faithfulness drops below 80%.  
-  *Engineering Fix:* Lower generation temperature to 0.0, tighten system prompt constraints.
+When a strategy scores below threshold, RAGLens identifies the exact pipeline bottleneck:
+- **`Context Limits`**: Triggered when `Context Recall < 0.65` or context truncation is detected.  
+  *Recommendation:* Upgrade to Parent-Child chunk expansion or increase context chunk size.
+- **`Embedding Weakness`**: Triggered when `Context Precision < 0.60` due to dense semantic dilution of specific keywords.  
+  *Recommendation:* Enable Hybrid BM25 with Reciprocal Rank Fusion or neural Cross-Encoder reranking.
+- **`Hallucination`**: Triggered when `Faithfulness < 0.70`.  
+  *Recommendation:* Lower generation temperature to 0.0, tighten system prompt constraints, or enforce strict quotation requirements.
 </details>
 
 ---
@@ -148,29 +158,32 @@ pip install -r requirements.txt
 
 ### 2. Configure Environment (`.env`)
 ```bash
-# Optional: Add your Gemini API key (platform includes local deterministic fallback)
-echo GEMINI_API_KEY="your_api_key_here" > .env
+# Add your Gemini API key (also includes built-in deterministic fallback)
+GEMINI_API_KEY="your_api_key_here"
+
+# Optional: Cohere Rerank API key (falls back to local neural ms-marco-MiniLM CrossEncoder)
+COHERE_API_KEY="your_cohere_key_optional"
 ```
 
 ### 3. Launch App
 ```bash
 python main.py
 ```
-- 🌐 **Dashboard:** [http://localhost:8000](http://localhost:8000)
+- 🌐 **Interactive Dashboard:** [http://localhost:8000](http://localhost:8000)
 - 📖 **Interactive Swagger Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-### Run Automated Tests
+### Run Test Suite
 ```bash
 pytest tests/test_raglens.py
 ```
-*(All 7 unit and integration tests pass in < 12 seconds).*
+*(All 7 unit and integration tests verify BGE-small-en-1.5, Neural Cross-Encoder, and Ragas 4-metric evaluations).*
 
 ---
 
 ## 📡 API Usage Example
 
 <details>
-<summary><b>cURL Example: Ingest Document & Generate Evaluation Questions</b></summary>
+<summary><b>cURL Example: Upload Document & Generate Evaluation Questions</b></summary>
 
 ```bash
 curl -X POST "http://localhost:8000/api/upload-document-json" \
@@ -183,7 +196,7 @@ curl -X POST "http://localhost:8000/api/upload-document-json" \
 </details>
 
 <details>
-<summary><b>cURL Example: Run Parallel Benchmark</b></summary>
+<summary><b>cURL Example: Run Parallel Benchmark Across 5 Strategies</b></summary>
 
 ```bash
 curl -X POST "http://localhost:8000/api/benchmark" \
@@ -198,16 +211,19 @@ curl -X POST "http://localhost:8000/api/benchmark" \
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Production Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Frontend** | Modern Next.js 14 Aesthetic (Tailwind CSS, Phosphor Icons) |
-| **Backend API** | FastAPI (Async endpoints, Pydantic v2 schemas) |
-| **Vector Database** | ChromaDB (Embedded HNSW collection, parent-child metadata) |
-| **Orchestration** | LangGraph Parallel `StateGraph` (Concurrent 5-node fanout) |
-| **Evaluation** | Ragas LLM-as-a-Judge (Faithfulness, Correctness, Completeness) |
-| **Deployment** | Vercel Serverless Function (`api/index.py`) |
+| Layer | Technology | Details |
+|---|---|---|
+| **Frontend** | Modern Next.js 14 Aesthetic | Tailwind CSS, Phosphor Icons, real-time benchmark telemetry |
+| **Backend API** | FastAPI | Async endpoints, Pydantic v2 schemas, CORS enabled |
+| **Dense Embeddings** | `BAAI/bge-small-en-v1.5` | 384-dimensional dense vectors, batch-encoded (`batch_size=32`) |
+| **Vector Database** | ChromaDB | Embedded HNSW vector store with parent/child metadata tracking |
+| **Neural Reranker** | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Real cross-attention neural reranking + Cohere Rerank API fallback |
+| **Orchestration** | LangGraph Parallel `StateGraph` | Asynchronous 5-node concurrent pipeline execution |
+| **Evaluation Engine** | Ragas 4-Metric Engine | Faithfulness, Answer Relevancy, Context Precision, Context Recall |
+| **LLM Judge / Synthesizer**| Gemini 2.5 Flash | Document question generation + claim verification judge |
+| **Deployment** | Vercel Serverless Function | Fast serverless endpoints via `api/index.py` |
 
 ---
 

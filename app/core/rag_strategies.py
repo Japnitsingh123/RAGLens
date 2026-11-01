@@ -14,27 +14,33 @@ from typing import List, Dict, Any, Optional
 import httpx
 from app.core.chroma_vector_store import ChromaVectorStore, global_chroma_store
 
-async def call_llm_generation(prompt: str, system_prompt: str = "You are a concise, factual technical assistant.") -> str:
-    """Invokes Gemini 2.5 Flash via REST API with fallback."""
+async def call_llm_generation(
+    prompt: str,
+    system_prompt: str = "You are a concise, factual technical assistant.",
+    max_tokens: int = 700
+) -> str:
+    """Invokes Gemini LLM (2.5-flash, 1.5-flash) via REST API with fallback."""
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if api_key:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-        payload = {
-            "contents": [{"parts": [{"text": f"{system_prompt}\n\n{prompt}"}]}],
-            "generationConfig": {"temperature": 0.1, "maxOutputTokens": 300}
-        }
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                res = await client.post(url, json=payload)
-                if res.status_code == 200:
-                    data = res.json()
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts:
-                            return parts[0].get("text", "").strip()
-        except Exception:
-            pass
+        models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+        for model in models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            payload = {
+                "contents": [{"parts": [{"text": f"{system_prompt}\n\n{prompt}"}]}],
+                "generationConfig": {"temperature": 0.2, "maxOutputTokens": max_tokens}
+            }
+            try:
+                async with httpx.AsyncClient(timeout=12.0) as client:
+                    res = await client.post(url, json=payload)
+                    if res.status_code == 200:
+                        data = res.json()
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts:
+                                return parts[0].get("text", "").strip()
+            except Exception:
+                continue
 
     return synthesize_fallback_answer(prompt)
 

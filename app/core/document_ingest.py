@@ -1,7 +1,7 @@
 """
 Document Ingestion & Synthetic Benchmark Question Generation.
 Parses uploaded documents (PDF, TXT, Markdown), splits into parent-child chunks,
-inserts into MySQL vector store, and synthesizes diverse benchmark evaluation questions using LLM.
+inserts into ChromaDB vector store, and synthesizes diverse benchmark evaluation questions using LLM.
 """
 
 import io
@@ -205,7 +205,7 @@ def ingest_document_into_store(
     store: ChromaVectorStore = global_chroma_store
 ) -> Tuple[int, int]:
     """
-    Chunks document and inserts parent documents and child chunks into the MySQL vector store.
+    Chunks document and inserts parent documents and child chunks into the ChromaDB vector store.
     Returns (parents_count, chunks_count).
     """
     structured = chunk_document(text)

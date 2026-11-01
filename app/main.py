@@ -99,7 +99,7 @@ async def upload_document(
     content: Optional[str] = Form(None)
 ):
     """
-    Ingests user document (PDF, TXT, MD) into MySQL vector store (parent-child chunks)
+    Ingests user document (PDF, TXT, MD) into ChromaDB vector store (parent-child chunks)
     and automatically generates a comprehensive benchmark question testset covering multiple aspects.
     """
     try:
@@ -118,7 +118,7 @@ async def upload_document(
         if len(full_text.strip()) < 30:
             raise HTTPException(status_code=400, detail="Document content is too short (minimum 30 characters required).")
 
-        # 1. Ingest into MySQL knowledge base
+        # 1. Ingest into ChromaDB knowledge base
         parents_count, chunks_count = ingest_document_into_store(title=doc_title, text=full_text)
 
         # 2. Synthesize benchmark questions with LLM
@@ -130,7 +130,7 @@ async def upload_document(
             parents_ingested=parents_count,
             chunks_created=chunks_count,
             generated_questions=[GeneratedQuestion(**q) for q in questions],
-            message=f"Successfully ingested '{doc_title}' into MySQL vector store ({parents_count} parents, {chunks_count} chunks) and generated {len(questions)} evaluation questions."
+            message=f"Successfully ingested '{doc_title}' into ChromaDB vector store ({parents_count} parents, {chunks_count} chunks) and generated {len(questions)} evaluation questions."
         )
     except HTTPException:
         raise
@@ -149,7 +149,7 @@ async def upload_document_json(req: DocUploadJsonRequest):
             parents_ingested=parents_count,
             chunks_created=chunks_count,
             generated_questions=[GeneratedQuestion(**q) for q in questions],
-            message=f"Successfully ingested '{req.title}' into MySQL vector store and generated {len(questions)} evaluation questions."
+            message=f"Successfully ingested '{req.title}' into ChromaDB vector store and generated {len(questions)} evaluation questions."
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Document ingestion failed: {str(e)}")

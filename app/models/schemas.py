@@ -1,132 +1,65 @@
+"""
+RAGLens Schemas: Pydantic models for the 5-Strategy RAG Evaluation Platform.
+Benchmarking: Naive, Hybrid BM25, Cohere Rerank, HyDE, Parent-Child via LangGraph.
+Evaluation: Ragas (Faithfulness, Correctness, Completeness) & Failure Attribution.
+"""
+
 from typing import List, Dict, Any, Optional
+from enum import Enum
 from pydantic import BaseModel, Field
 
-# --- Pipeline Configuration ---
-class PipelineConfig(BaseModel):
-    mode: str = Field(default="builtin", description="'builtin' or 'external'")
-    # Built-in RAG options
-    search_type: str = Field(default="hybrid", description="'vector' or 'hybrid'")
-    embedding_model: str = Field(default="text-embedding-3-small", description="Model label for embeddings")
-    chunk_size: int = Field(default=512, description="Chunk size in characters")
-    chunk_overlap: int = Field(default=64, description="Chunk overlap in characters")
-    top_k: int = Field(default=4, description="Number of retrieved chunks")
-    security_guardrails_enabled: bool = Field(default=True, description="Enable input & document guardrails")
-    llm_model: str = Field(default="gpt-4o", description="LLM used for generation / cost calculation")
+class StrategyType(str, Enum):
+    NAIVE = "naive"
+    HYBRID_BM25 = "hybrid_bm25"
+    COHERE_RERANK = "cohere_rerank"
+    HYDE = "hyde"
+    PARENT_CHILD = "parent_child"
 
-    # External RAG API options
-    external_url: Optional[str] = Field(default=None, description="External RAG endpoint (e.g. http://localhost:8080/rag)")
-    external_headers: Optional[Dict[str, str]] = Field(default_factory=dict, description="Headers e.g. Authorization")
-    request_template: Optional[Dict[str, Any]] = Field(default=None, description="JSON body payload template")
-    response_answer_key: Optional[str] = Field(default="answer", description="JSON key for answer in response")
-    response_contexts_key: Optional[str] = Field(default="contexts", description="JSON key for retrieved contexts")
+class RootCauseType(str, Enum):
+    NONE = "none"
+    CONTEXT_LIMITS = "context_limits"
+    EMBEDDING_WEAKNESS = "embedding_weakness"
+    HALLUCINATION = "hallucination"
 
-# --- Test Items ---
-class TestCaseItem(BaseModel):
-    id: str
-    question: str
-    ground_truth: str
-    contexts: Optional[List[str]] = None
-    generated_answer: Optional[str] = None
-    category: Optional[str] = "general"
+class RagasMetrics(BaseModel):
+    faithfulness: float = Field(..., ge=0.0, le=1.0, description="Claims supported by retrieved context (0-1.0)")
+    answer_correctness: float = Field(..., ge=0.0, le=1.0, description="Semantic and factual accuracy vs ground truth (0-1.0)")
+    answer_completeness: float = Field(..., ge=0.0, le=1.0, description="Coverage of necessary facets in query (0-1.0)")
+    reasoning: Dict[str, str] = Field(default_factory=dict, description="Explanations for each metric score")
 
-class AdversarialSecurityTest(BaseModel):
-    id: str
-    name: str
-    category: str  # 'prompt_injection', 'system_override', 'poisoned_document'
-    attack_payload: str
-    expected_behavior: str
-    target_field: str = "query"  # 'query' or 'document'
-    passed: bool = False
-    verdict: str = "Pending"  # 'SAFE', 'VULNERABLE', 'BLOCKED'
-    risk_level: str = "HIGH"  # 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'
-    evidence: str = ""
+class FailureAttribution(BaseModel):
+    primary_root_cause: RootCauseType = Field(..., description="Diagnosed primary failure mode")
+    context_limits_score: float = Field(..., ge=0.0, le=1.0, description="Risk/severity of context truncation or limit issues")
+    embedding_weakness_score: float = Field(..., ge=0.0, le=1.0, description="Risk/severity of vocabulary or semantic retrieval mismatch")
+    hallucination_score: float = Field(..., ge=0.0, le=1.0, description="Risk/severity of unsupported claims in generated text")
+    diagnosis_details: str = Field(..., description="Detailed explanation of what failed and why")
+    recommendation: str = Field(..., description="Actionable architectural fix for this strategy")
 
-# --- Quality Metric Schemas ---
-class QualityItemResult(BaseModel):
-    test_id: str
-    question: str
-    faithfulness_score: float
-    answer_relevancy_score: float
-    context_precision_score: float
-    context_recall_score: float
-    hallucination_detected: bool
-    unsupported_claims: List[str] = Field(default_factory=list)
-    supported_claims: List[str] = Field(default_factory=list)
-    retrieved_contexts: List[str] = Field(default_factory=list)
-    generated_answer: str
-
-class QualitySummary(BaseModel):
-    avg_faithfulness: float
-    avg_answer_relevancy: float
-    avg_context_precision: float
-    avg_context_recall: float
-    overall_quality_score: float
-    items: List[QualityItemResult] = Field(default_factory=list)
-
-# --- Performance Metric Schemas ---
-class PerformanceSummary(BaseModel):
-    avg_response_latency_ms: float
-    avg_retrieval_latency_ms: float
-    avg_generation_latency_ms: float
-    avg_prompt_tokens: float
-    avg_completion_tokens: float
-    avg_total_tokens: float
-    total_tokens_consumed: int
-    estimated_cost_usd: float
-    estimated_cost_per_1k_queries: float
-    latency_breakdown: Dict[str, float] = Field(default_factory=dict)
-
-# --- Security Metric Schemas ---
-class SecuritySummary(BaseModel):
-    overall_security_score: float  # 0.0 to 1.0 (1.0 = 100% passed)
-    total_tests: int
-    passed_tests: int
-    failed_tests: int
-    risk_rating: str  # 'Secure', 'Medium Risk', 'High Risk', 'Critical Vulnerabilities'
-    test_results: List[AdversarialSecurityTest] = Field(default_factory=list)
-    vulnerability_breakdown: Dict[str, int] = Field(default_factory=dict)
-
-# --- Benchmark Schemas ---
-class BenchmarkComparisonItem(BaseModel):
-    configuration_name: str
-    variant: str
-    retrieval_latency_ms: float
-    context_precision: float
-    context_recall: float
-    token_usage: int
-    cost_per_query: float
+class StrategyResult(BaseModel):
+    strategy: StrategyType
+    strategy_name: str
     description: str
+    answer: str
+    contexts: List[str]
+    latency_ms: float
+    retrieval_latency_ms: float
+    generation_latency_ms: float
+    total_tokens: int
+    ragas_metrics: RagasMetrics
+    failure_attribution: FailureAttribution
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
-class BenchmarkGroupResult(BaseModel):
-    benchmark_type: str  # 'search_mode', 'chunk_size', 'top_k', 'caching'
-    title: str
-    winner: str
-    recommendation: str
-    variants: List[BenchmarkComparisonItem]
+class BenchmarkRequest(BaseModel):
+    query: str = Field(..., min_length=2, json_schema_extra={"example": "What encryption standard is used for data at rest and in transit?"})
+    ground_truth: Optional[str] = Field(None, json_schema_extra={"example": "AES-256-GCM for data at rest and TLS 1.3 with forward secrecy for transit."})
+    top_k: int = Field(3, ge=1, le=10)
 
-class BenchmarkSummary(BaseModel):
-    groups: List[BenchmarkGroupResult] = Field(default_factory=list)
-
-# --- Full Evaluation Report ---
-class FullEvaluationReport(BaseModel):
-    run_id: str
-    timestamp: str
-    pipeline_mode: str
-    raglens_score: float  # 0 - 100
-    status: str  # 'Production Ready', 'Needs Improvement', 'High Risk'
-    quality: QualitySummary
-    performance: PerformanceSummary
-    security: SecuritySummary
-    benchmarking: BenchmarkSummary
+class BenchmarkResponse(BaseModel):
+    query: str
+    ground_truth: Optional[str]
+    strategies_evaluated: int
+    execution_mode: str = "LangGraph Parallel Execution"
+    results: List[StrategyResult]
+    best_strategy: str
     executive_summary: str
-    what_is_working: List[str] = Field(default_factory=list)
-    what_is_failing: List[str] = Field(default_factory=list)
-    what_needs_improvement: List[str] = Field(default_factory=list)
-    recommendations: List[str] = Field(default_factory=list)
-
-# --- Evaluation Request ---
-class RunEvaluationRequest(BaseModel):
-    pipeline_config: PipelineConfig = Field(default_factory=PipelineConfig)
-    suites: List[str] = Field(default_factory=lambda: ["quality", "performance", "security", "benchmarking"])
-    custom_test_items: Optional[List[TestCaseItem]] = None
-    custom_documents: Optional[List[str]] = None
+    mysql_vector_status: str = "MySQL 8.4 VECTOR(768) Engine Active"

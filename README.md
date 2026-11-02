@@ -3,15 +3,6 @@
 # ⚡ RAGLens
 ### Production RAG Evaluation, Benchmarking & Failure Attribution Platform
 
-[![Live Demo](https://img.shields.io/badge/Demo-raglens.vercel.app-6366F1?style=for-the-badge&logo=vercel&logoColor=white)](https://raglens.vercel.app)
-[![GitHub Repo](https://img.shields.io/badge/GitHub-Japnitsingh123%2FRAGLens-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Japnitsingh123/RAGLens)
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![Embeddings](https://img.shields.io/badge/Embeddings-BAAI%2Fbge--small--en--v1.5-blue?style=for-the-badge&logo=huggingface&logoColor=white)](https://huggingface.co/BAAI/bge-small-en-v1.5)
-[![Reranker](https://img.shields.io/badge/Reranker-ms--marco--MiniLM--L--6--v2-orange?style=for-the-badge&logo=huggingface&logoColor=white)](https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2)
-[![Vector DB](https://img.shields.io/badge/Vector_DB-ChromaDB-FF6600?style=for-the-badge&logo=databricks&logoColor=white)](https://www.trychroma.com)
-[![LangGraph](https://img.shields.io/badge/Orchestrator-LangGraph_Parallel-FF4F00?style=for-the-badge)](https://langchain-ai.github.io/langgraph/)
-[![Ragas](https://img.shields.io/badge/Evaluation-Ragas_4--Metric_Engine-10B981?style=for-the-badge)](https://docs.ragas.io/)
-
 <p align="center">
   <b>Upload any document, index with BGE-small-en-1.5 into ChromaDB, synthesize benchmark questions with Gemini, and evaluate 5 RAG architectures concurrently via LangGraph & Ragas 4-metric failure attribution.</b>
 </p>

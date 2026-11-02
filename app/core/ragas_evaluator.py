@@ -47,7 +47,7 @@ async def evaluate_with_gemini_judge(prompt: str) -> Optional[str]:
     if not api_key:
         return None
 
-    models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
+    models = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-2.5-flash"]
     for model in models:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         headers = {"x-goog-api-key": api_key, "Content-Type": "application/json"}

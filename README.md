@@ -120,14 +120,16 @@ Click on any strategy below to view how it operates, its underlying models, and 
 
 RAGLens implements the 4 standard **Ragas** metrics combined with automated root-cause diagnostics:
 
-### 1. The 4 Ragas Evaluation Metrics
+### 1. The 4 Canonical Ragas Evaluation Metrics
 | Metric | Formulation / Logic | What It Measures |
 |---|---|---|
-| **Faithfulness** | $\frac{|\text{Supported Claims in Answer}|}{|\text{Total Claims in Answer}|}$ | **Groundedness / Hallucination Prevention:** Evaluates whether statements in the generated response are factually supported by retrieved context. |
-| **Answer Relevancy** | $\cos(\mathbf{e}_{\text{query}}, \mathbf{e}_{\text{answer}})$ via BGE-small-en | **Query Alignment:** Penalizes verbose, evasive, or off-topic responses that don't address the user prompt. |
-| **Context Precision** | $\text{mAP@K} = \frac{1}{|\text{rel}|} \sum_{k=1}^K \text{Prec}@k \times \text{rel}(k)$ | **Signal-to-Noise Ratio:** Measures whether relevant context chunks are ranked higher in the retrieved top-$k$ list. |
-| **Context Recall** | $\frac{|\text{Ground Truth Claims in Context}|}{|\text{Total Ground Truth Claims}|}$ | **Retrieval Completeness:** Measures whether the retrieved context passages contain all necessary facts to answer the question. |
-| **Ragas Score** | $\text{Harmonic Mean}(\text{Faithfulness}, \text{Relevancy}, \text{Precision}, \text{Recall})$ | **Overall Benchmark Score:** Unified measure of end-to-end RAG pipeline quality. |
+| **Faithfulness** | $\frac{|\text{Supported Claims in Answer}|}{|\text{Total Claims in Answer}|}$ | **Groundedness / Hallucination Prevention:** Evaluated via Gemini LLM Judge claim extraction and verification against retrieved context. |
+| **Answer Relevancy** | $\cos(\mathbf{e}_{\text{query}}, \mathbf{e}_{\text{answer}})$ via BGE-small-en-1.5 | **Query Alignment:** Evaluated via BGE dense cosine similarity combined with Gemini Judge relevance scoring. |
+| **Context Precision** | $\text{mAP@K} = \frac{1}{|\text{rel}|} \sum_{k=1}^K \text{Prec}@k \times \text{rel}(k)$ | **Signal-to-Noise Ratio:** Evaluates whether chunks containing relevant answers are ranked at the top using Mean Average Precision. |
+| **Context Recall** | $\frac{|\text{Ground Truth Claims in Context}|}{|\text{Total Ground Truth Claims}|}$ | **Retrieval Completeness:** Verifies what proportion of ground truth reference propositions are covered across retrieved context chunks. |
+| **Ragas Score** | $\text{Harmonic Mean}(\text{Faithfulness}, \text{Relevancy}, \text{Precision}, \text{Recall})$ | **Overall Benchmark Score:** Unified harmonic measure of end-to-end RAG pipeline quality. |
+
+RAGLens imports and exposes the official `ragas.metrics` canonical definitions (`ragas_faithfulness_metric`, `ragas_answer_relevancy_metric`, `ragas_context_precision_metric`, `ragas_context_recall_metric`) and executes full Gemini LLM-as-a-Judge and BGE semantic embeddings both locally and on Vercel.
 
 ### 2. Failure Attribution Engine
 <details>

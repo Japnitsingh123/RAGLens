@@ -8,10 +8,12 @@ load_dotenv()
 # Ensure current directory is on PYTHONPATH
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
+from app.main import app
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     print(f"\n=======================================================")
-    print(f"  RAGLens: RAG Evaluation, Testing & Benchmarking")
+    print(f"  RAGLens: RAG Evaluation & Benchmarking Platform")
     print(f"  Local Dashboard: http://localhost:{port}")
     print(f"  Interactive Swagger Docs: http://localhost:{port}/docs")
     print(f"=======================================================\n")

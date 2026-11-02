@@ -21,6 +21,7 @@ Failure Attribution Engine:
 
 import os
 import sys
+import re
 from pathlib import Path
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
@@ -56,11 +57,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def vercel_path_rewrite(request: Request, call_next):
+    """
+    Normalizes request paths across local development and Vercel Serverless deployments.
+    Uses __orig_path__ passed by Vercel rewrite or proxy headers so every route matches perfectly.
+    """
+    orig_path = request.query_params.get("__orig_path__")
+    if not orig_path:
+        orig_path = request.headers.get("x-forwarded-uri") or request.headers.get("x-invoke-path")
+    
+    if orig_path:
+        clean_path = orig_path.split("?")[0]
+        if not clean_path.startswith("/"):
+            clean_path = "/" + clean_path
+        # Remove repeated slashes
+        clean_path = re.sub(r"/+", "/", clean_path)
+        request.scope["path"] = clean_path
+    else:
+        path = request.scope.get("path", "")
+        for prefix in ("/api/index.py", "/api/index", "/fastapi"):
+            if path.startswith(prefix):
+                remainder = path[len(prefix):]
+                request.scope["path"] = remainder if remainder.startswith("/") else ("/" + remainder if remainder else "/")
+                break
+    return await call_next(request)
+
 # Jinja2 Templates
 templates_dir = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=str(templates_dir))
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/api/index.py", response_class=HTMLResponse)
+@app.get("/api/index", response_class=HTMLResponse)
 async def serve_dashboard(request: Request):
     """Serves the Next.js 14 styled benchmarking dashboard."""
     return templates.TemplateResponse(
@@ -156,6 +185,15 @@ async def upload_document_json(req: DocUploadJsonRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Document ingestion failed: {str(e)}")
+
+@app.get("/api/inspect-headers")
+async def inspect_headers(request: Request):
+    return {
+        "scope_path": request.scope.get("path"),
+        "raw_path": request.scope.get("raw_path", b"").decode("latin-1"),
+        "headers": dict(request.headers),
+        "query_params": dict(request.query_params)
+    }
 
 @app.get("/api/presets")
 async def get_presets():

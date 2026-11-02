@@ -26,7 +26,7 @@
 
 > - **Production RAG Benchmarking Platform:** Benchmarks 5 production retrieval architectures—**Naive Dense, Hybrid BM25, Neural Cross-Encoder Rerank, HyDE, and Parent-Child Expansion**—in parallel via **LangGraph**.
 > - **BAAI/bge-small-en-v1.5 Embeddings:** 384-dimensional dense vectors with high retrieval precision and fast batch ingestion (`batch_size=32`) into ChromaDB.
-> - **Neural Cross-Encoder Reranking:** Powered by `cross-encoder/ms-marco-MiniLM-L-6-v2` for deep query-passage joint attention, replacing heuristic formulas (with optional Cohere Rerank API support).
+> - **Neural Cross-Encoder Reranking:** Powered by `cross-encoder/ms-marco-MiniLM-L-6-v2` 
 > - **Automated Testset Synthesis:** Generates nuanced evaluation questions and ground-truth references directly from uploaded documents using **Gemini 2.5 Flash**.
 > - **Ragas 4 Canonical Metrics & Failure Attribution:** Evaluates **Faithfulness**, **Answer Relevancy**, **Context Precision**, and **Context Recall** plus **Harmonic Ragas Score**, automatically attributing failure root causes (*Context Limits, Embedding Weakness, Hallucination*).
 

@@ -37,23 +37,23 @@ async def call_llm_generation(
     system_prompt: str = "You are a concise, factual technical assistant.",
     max_tokens: int = 1500
 ) -> str:
-    """Invokes Gemini LLM (2.5-flash, flash-latest) via REST API with fallback."""
+    """Invokes Gemini LLM (2.5-flash, 2.0-flash, 1.5-flash) via REST API with fallback."""
     api_key = os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("GOOGLE_API_KEY", "").strip()
     if api_key:
-        models = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
+        models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.5-pro"]
         for model in models:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+            headers = {"x-goog-api-key": api_key, "Content-Type": "application/json"}
             payload = {
                 "contents": [{"parts": [{"text": f"{system_prompt}\n\n{prompt}"}]}],
                 "generationConfig": {
                     "temperature": 0.2,
-                    "maxOutputTokens": max_tokens,
-                    "thinkingConfig": {"thinkingBudget": 0}
+                    "maxOutputTokens": max_tokens
                 }
             }
             try:
-                async with httpx.AsyncClient(timeout=18.0) as client:
-                    res = await client.post(url, json=payload)
+                async with httpx.AsyncClient(timeout=12.0) as client:
+                    res = await client.post(url, headers=headers, json=payload)
                     if res.status_code == 200:
                         data = res.json()
                         candidates = data.get("candidates", [])
@@ -63,6 +63,19 @@ async def call_llm_generation(
                                 text_val = parts[0].get("text", "").strip()
                                 if text_val:
                                     return text_val
+                    elif res.status_code != 200:
+                        # Fallback query parameter variant
+                        fallback_url = f"{url}?key={api_key}"
+                        res2 = await client.post(fallback_url, json=payload)
+                        if res2.status_code == 200:
+                            data = res2.json()
+                            candidates = data.get("candidates", [])
+                            if candidates:
+                                parts = candidates[0].get("content", {}).get("parts", [])
+                                if parts:
+                                    text_val = parts[0].get("text", "").strip()
+                                    if text_val:
+                                        return text_val
             except Exception:
                 continue
 

@@ -94,8 +94,7 @@ Click on any strategy below to view how it operates, its underlying models, and 
 <br>
 
 - **Reranker Model:** `cross-encoder/ms-marco-MiniLM-L-6-v2` 
-- **How it works:** Initially retrieves 6 candidate chunks from ChromaDB and calculates relevance scores using retrieval similarity and Jaccard word overlap. It then ranks the candidates and selects the top 3 most relevant chunks to pass to the LLM.
-- **Best for:** Nuanced technical questions where high-level cosine similarity retrieves semantically adjacent but non-answering passages.
+- **How it works:** Initially retrieves 9 candidate chunks from ChromaDB and calculates relevance scores using Cross Encoder.
 </details>
 
 <details>
@@ -121,15 +120,11 @@ Click on any strategy below to view how it operates, its underlying models, and 
 RAGLens implements the 4 standard **Ragas** metrics combined with automated root-cause diagnostics:
 
 ### 1. The 4 Canonical Ragas Evaluation Metrics
-| Metric | Formulation / Logic | What It Measures |
-|---|---|---|
-| **Faithfulness** | $\frac{|\text{Supported Claims in Answer}|}{|\text{Total Claims in Answer}|}$ | **Groundedness / Hallucination Prevention:** Evaluated via Gemini LLM Judge claim extraction and verification against retrieved context. |
-| **Answer Relevancy** | $\cos(\mathbf{e}_{\text{query}}, \mathbf{e}_{\text{answer}})$ via BGE-small-en-1.5 | **Query Alignment:** Evaluated via BGE dense cosine similarity combined with Gemini Judge relevance scoring. |
-| **Context Precision** | $\text{mAP@K} = \frac{1}{|\text{rel}|} \sum_{k=1}^K \text{Prec}@k \times \text{rel}(k)$ | **Signal-to-Noise Ratio:** Evaluates whether chunks containing relevant answers are ranked at the top using Mean Average Precision. |
-| **Context Recall** | $\frac{|\text{Ground Truth Claims in Context}|}{|\text{Total Ground Truth Claims}|}$ | **Retrieval Completeness:** Verifies what proportion of ground truth reference propositions are covered across retrieved context chunks. |
-| **Ragas Score** | $\text{Harmonic Mean}(\text{Faithfulness}, \text{Relevancy}, \text{Precision}, \text{Recall})$ | **Overall Benchmark Score:** Unified harmonic measure of end-to-end RAG pipeline quality. |
 
-RAGLens imports and exposes the official `ragas.metrics` canonical definitions (`ragas_faithfulness_metric`, `ragas_answer_relevancy_metric`, `ragas_context_precision_metric`, `ragas_context_recall_metric`) and executes full Gemini LLM-as-a-Judge and BGE semantic embeddings both locally and on Vercel.
+- **Faithfulness:** Measures whether generated answers are factually supported by the retrieved context.
+- **Answer Relevancy:** Evaluates how relevant and directly related the generated answer is to the user's query.
+- **Context Precision:** Measures whether relevant retrieved chunks are ranked higher than irrelevant ones.
+- **Context Recall:** Measures whether the retrieved context contains all the information required to answer the query.
 
 ### 2. Failure Attribution Engine
 <details>
@@ -161,10 +156,6 @@ pip install -r requirements.txt
 # Add your Gemini API key (also includes built-in deterministic fallback)
 GEMINI_API_KEY="your_api_key_here"
 
-# Optional: Cohere Rerank API key (falls back to local neural ms-marco-MiniLM CrossEncoder)
-COHERE_API_KEY="your_cohere_key_optional"
-```
-
 ### 3. Launch App
 ```bash
 python main.py
@@ -180,37 +171,6 @@ pytest tests/test_raglens.py
 
 ---
 
-## 📡 API Usage Example
-
-<details>
-<summary><b>cURL Example: Upload Document & Generate Evaluation Questions</b></summary>
-
-```bash
-curl -X POST "http://localhost:8000/api/upload-document-json" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Kafka Distributed Commit Log",
-    "content": "Kafka uses a partitioned commit log with replication factor 3 and min.insync.replicas configured to 2."
-  }'
-```
-</details>
-
-<details>
-<summary><b>cURL Example: Run Parallel Benchmark Across 5 Strategies</b></summary>
-
-```bash
-curl -X POST "http://localhost:8000/api/benchmark" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "What encryption standard is used for data at rest and how are keys rotated?",
-    "ground_truth": "Data at rest is encrypted using AES-256-GCM with keys managed in AWS KMS and automatically rotated every 90 days.",
-    "top_k": 3
-  }'
-```
-</details>
-
----
-
 ## 🛠️ Production Tech Stack
 
 | Layer | Technology | Details |
@@ -219,7 +179,7 @@ curl -X POST "http://localhost:8000/api/benchmark" \
 | **Backend API** | FastAPI | Async endpoints, Pydantic v2 schemas, CORS enabled |
 | **Dense Embeddings** | `BAAI/bge-small-en-v1.5` | 384-dimensional dense vectors, batch-encoded (`batch_size=32`) |
 | **Vector Database** | ChromaDB | Embedded HNSW vector store with parent/child metadata tracking |
-| **Neural Reranker** | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Real cross-attention neural reranking + Cohere Rerank API fallback |
+| **Neural Reranker** | `cross-encoder/ms-marco-MiniLM-L-6-v2`
 | **Orchestration** | LangGraph Parallel `StateGraph` | Asynchronous 5-node concurrent pipeline execution |
 | **Evaluation Engine** | Ragas 4-Metric Engine | Faithfulness, Answer Relevancy, Context Precision, Context Recall |
 | **LLM Judge / Synthesizer**| Gemini 2.5 Flash | Document question generation + claim verification judge |

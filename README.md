@@ -27,7 +27,7 @@
 
 ```mermaid
 flowchart TD
-    DOC["User Uploads Document\n(PDF, TXT, MD)"] --> CHUNK["Parent-Child Chunking\n(500t Parent & 100t Child)"]
+    DOC["User Uploads Document\n(PDF, TXT, MD)"] --> CHUNK["Parent-Child Chunking"]
     CHUNK --> BGE["BAAI/bge-small-en-v1.5\n(384-dim Dense Embeddings)"]
     BGE --> CHROMA[("ChromaDB Vector Store\nHNSW Index + Metadatas")]
     CHUNK --> GEMINI["Gemini 2.5 Flash\n(Auto-synthesizes 4 Benchmark Questions + Ground Truth)"]
@@ -40,7 +40,7 @@ flowchart TD
         START --> N2["2. Hybrid BM25 RAG\n(BGE Dense + BM25 Lexical RRF)"]
         START --> N3["3. Neural Cross-Encoder Rerank\n(ms-marco-MiniLM-L-6-v2)"]
         START --> N4["4. HyDE RAG\n(Hypothetical Doc Embedding)"]
-        START --> N5["5. Parent-Child RAG\n(100t Child -> 500t Parent Expansion)"]
+        START --> N5["5. Parent-Child RAG"]
     end
 
     N1 --> AGG["Aggregation Node"]
